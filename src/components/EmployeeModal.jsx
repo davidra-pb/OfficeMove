@@ -48,7 +48,7 @@ export default function EmployeeModal({ employee, isMoved, toggleMoved, onClose 
                 {employee.oldFloor && <div>קומה {employee.oldFloor}</div>}
               </div>
             </div>
-            <span className="text-gray-300 text-lg shrink-0">&rarr;</span>
+            <span className="text-gray-300 text-lg shrink-0">&larr;</span>
             <div className="flex-1 bg-gray-50 rounded-lg p-4 text-center">
               <div className="text-xs text-gray-400 mb-2">מיקום חדש</div>
               <div className="text-xl font-bold text-gray-900 mb-1">{employee.newRoom}</div>
