@@ -1,11 +1,13 @@
 // Room coordinates — center of each room as % of image.
 // Calibrated via drag-to-position tool by user.
 
+const base = import.meta.env.BASE_URL;
+
 export const FLOOR_PLANS = [
-  { id: 'floor8_ic', building: 'ישראל קנדה', floor: 8, oldImage: '/floors/floor8_ic_new.png', newImage: '/floors/floor8_ic_new.png', label: 'קומה 8 — ישראל קנדה' },
-  { id: 'floor6_ic', building: 'ישראל קנדה', floor: 6, oldImage: '/floors/floor6_ic_new.png', newImage: '/floors/floor6_ic_new.png', label: 'קומה 6 — ישראל קנדה' },
-  { id: 'floor8_acro', building: 'אקרו', floor: 8, oldImage: '/floors/floor8_acro_new.png', newImage: '/floors/floor8_acro_new.png', label: 'קומה 8 — אקרו' },
-  { id: 'floor7_acro', building: 'אקרו', floor: 7, oldImage: '/floors/floor7_acro_new.png', newImage: '/floors/floor7_acro_new.png', label: 'קומה 7 — אקרו' },
+  { id: 'floor8_ic', building: 'ישראל קנדה', floor: 8, oldImage: `${base}floors/floor8_ic_old.png`, newImage: `${base}floors/floor8_ic_new.png`, label: 'קומה 8 — ישראל קנדה' },
+  { id: 'floor6_ic', building: 'ישראל קנדה', floor: 6, oldImage: `${base}floors/floor6_ic_old.png`, newImage: `${base}floors/floor6_ic_new.png`, label: 'קומה 6 — ישראל קנדה' },
+  { id: 'floor8_acro', building: 'אקרו', floor: 8, oldImage: `${base}floors/floor8_acro_old.png`, newImage: `${base}floors/floor8_acro_new.png`, label: 'קומה 8 — אקרו' },
+  { id: 'floor7_acro', building: 'אקרו', floor: 7, oldImage: `${base}floors/floor7_acro_old.png`, newImage: `${base}floors/floor7_acro_new.png`, label: 'קומה 7 — אקרו' },
 ];
 
 export const ROOM_COORDS = {
@@ -20,22 +22,22 @@ export const ROOM_COORDS = {
   '09A': { x: 83, y: 7, w: 6, h: 6, floor: 'floor8_ic' },
   '10A': { x: 83, y: 22, w: 6, h: 7, floor: 'floor8_ic' },
   '11A': { x: 83, y: 30, w: 6, h: 5, floor: 'floor8_ic' },
-  '12A': { x: 83, y: 63, w: 8, h: 5, floor: 'floor8_ic' },
-  '13A': { x: 83, y: 70, w: 8, h: 4, floor: 'floor8_ic' },
+  '12A': { x: 79, y: 63, w: 8, h: 5, floor: 'floor8_ic' },
+  '13A': { x: 79, y: 71, w: 8, h: 4, floor: 'floor8_ic' },
   '14A': { x: 79, y: 80, w: 5, h: 4, floor: 'floor8_ic' },
   '15A': { x: 85, y: 80, w: 5, h: 4, floor: 'floor8_ic' },
   '18A': { x: 72, y: 90, w: 5, h: 4, floor: 'floor8_ic' },
-  '19A': { x: 73, y: 83, w: 4, h: 4, floor: 'floor8_ic' },
-  '16A': { x: 79, y: 90, w: 4, h: 4, floor: 'floor8_ic' },
-  '17A': { x: 85, y: 90, w: 6, h: 5, floor: 'floor8_ic' },
+  '19A': { x: 72, y: 83, w: 4, h: 4, floor: 'floor8_ic' },
+  '16A': { x: 77, y: 92, w: 4, h: 4, floor: 'floor8_ic' },
+  '17A': { x: 86, y: 91, w: 6, h: 5, floor: 'floor8_ic' },
   '20A': { x: 65, y: 90, w: 7, h: 6, floor: 'floor8_ic' },
   '21A': { x: 52, y: 90, w: 6, h: 4, floor: 'floor8_ic' },
-  '22A': { x: 40, y: 90, w: 6, h: 4, floor: 'floor8_ic' },
-  '23A': { x: 33, y: 90, w: 5, h: 4, floor: 'floor8_ic' },
+  '22A': { x: 39, y: 88, w: 6, h: 4, floor: 'floor8_ic' },
+  '23A': { x: 32, y: 88, w: 5, h: 4, floor: 'floor8_ic' },
   '24A': { x: 17, y: 90, w: 5, h: 4, floor: 'floor8_ic' },
-  '25A': { x: 17, y: 78, w: 6, h: 6, floor: 'floor8_ic' },
-  '26A': { x: 17, y: 68, w: 6, h: 6, floor: 'floor8_ic' },
-  '27A': { x: 17, y: 59, w: 6, h: 5, floor: 'floor8_ic' },
+  '25A': { x: 17, y: 77, w: 6, h: 6, floor: 'floor8_ic' },
+  '26A': { x: 17, y: 66, w: 6, h: 6, floor: 'floor8_ic' },
+  '27A': { x: 17, y: 58, w: 6, h: 5, floor: 'floor8_ic' },
   '28A': { x: 17, y: 42, w: 7, h: 7, floor: 'floor8_ic' },
   '14B': { x: 18, y: 5, w: 6, h: 6, floor: 'floor6_ic' },
   '09B': { x: 25, y: 5, w: 5, h: 5, floor: 'floor6_ic' },
@@ -48,7 +50,7 @@ export const ROOM_COORDS = {
   '04B': { x: 38, y: 22, w: 6, h: 5, floor: 'floor6_ic' },
   '05B': { x: 45, y: 22, w: 7, h: 6, floor: 'floor6_ic' },
   '02B': { x: 32, y: 28, w: 5, h: 4, floor: 'floor6_ic' },
-  '01B': { x: 32, y: 35, w: 8, h: 5, floor: 'floor6_ic' },
+  '01B': { x: 33, y: 34, w: 8, h: 5, floor: 'floor6_ic' },
   '12B': { x: 16, y: 30, w: 4, h: 4, floor: 'floor6_ic' },
   '13B': { x: 22, y: 30, w: 4, h: 4, floor: 'floor6_ic' },
   '07C': { x: 83, y: 32, w: 4, h: 4, floor: 'floor6_ic' },
@@ -83,7 +85,7 @@ export const ROOM_COORDS = {
   '18D': { x: 83, y: 31, w: 5, h: 4, floor: 'floor8_acro' },
   '17D': { x: 83, y: 37, w: 5, h: 4, floor: 'floor8_acro' },
   '16D': { x: 83, y: 43, w: 5, h: 4, floor: 'floor8_acro' },
-  '15D': { x: 83, y: 50, w: 6, h: 5, floor: 'floor8_acro' },
+  '15D': { x: 83, y: 49, w: 6, h: 5, floor: 'floor8_acro' },
   '14D': { x: 83, y: 56, w: 5, h: 4, floor: 'floor8_acro' },
   '13D': { x: 83, y: 64, w: 5, h: 4, floor: 'floor8_acro' },
   '12D': { x: 83, y: 72, w: 5, h: 4, floor: 'floor8_acro' },
@@ -114,8 +116,28 @@ export const ROOM_COORDS = {
   '14E': { x: 73, y: 25, w: 8, h: 5, floor: 'floor7_acro' },
 };
 
+// Normalize room ID: '01B' → '1B', '07A' stays '07A' if that's the canonical key
+function normalizeRoomId(roomId) {
+  if (!roomId) return roomId;
+  return roomId.replace(/^0+/, '') || roomId;
+}
+
+// Build a lookup that works with both '01B' and '1B'
+export const ROOM_LOOKUP = {};
+for (const [key, val] of Object.entries(ROOM_COORDS)) {
+  ROOM_LOOKUP[key] = val;
+  const alt = normalizeRoomId(key);
+  if (alt !== key) ROOM_LOOKUP[alt] = val;
+}
+
+export function getRoomCoords(roomId) {
+  return ROOM_LOOKUP[roomId] || ROOM_LOOKUP[normalizeRoomId(roomId)] || null;
+}
+
 export function floorIdForRoom(roomId) {
   if (!roomId) return null;
+  const coords = getRoomCoords(roomId);
+  if (coords) return coords.floor;
   const letter = roomId.slice(-1);
   if (letter === 'A') return 'floor8_ic';
   if (letter === 'B' || letter === 'C') return 'floor6_ic';
