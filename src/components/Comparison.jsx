@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { PHASES, EMPLOYEES } from '../data/moveData.js';
-import { FLOOR_PLANS, ROOM_COORDS, floorIdForRoom } from '../data/roomCoords.js';
+import { FLOOR_PLANS, ROOM_LOOKUP, ROOM_COORDS, floorIdForRoom } from '../data/roomCoords.js';
 
 const DEPT_COLORS = {
   'כספים':'#3b82f6','הנדסה':'#10b981','התחדשות עירונית':'#f59e0b','כללי':'#6b7280',
@@ -28,6 +28,12 @@ export default function Comparison({ movedSet, onSelectEmployee, searchQuery = '
       if (!r || r === 'חדש' || r === 'מזכירות') return;
       if (!m[r]) m[r] = [];
       m[r].push(emp);
+      // Also store under the ROOM_COORDS canonical key (with leading zero)
+      const padded = r.replace(/^(\d)(\D)$/, '0$1$2');
+      if (padded !== r) {
+        if (!m[padded]) m[padded] = [];
+        m[padded].push(emp);
+      }
     });
     return m;
   }, []);
@@ -38,6 +44,11 @@ export default function Comparison({ movedSet, onSelectEmployee, searchQuery = '
       if (!emp.newRoom) return;
       if (!m[emp.newRoom]) m[emp.newRoom] = [];
       m[emp.newRoom].push(emp);
+      const padded = emp.newRoom.replace(/^(\d)(\D)$/, '0$1$2');
+      if (padded !== emp.newRoom) {
+        if (!m[padded]) m[padded] = [];
+        m[padded].push(emp);
+      }
     });
     return m;
   }, []);
