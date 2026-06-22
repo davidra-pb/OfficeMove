@@ -29,7 +29,7 @@ export default function LoginScreen({ onLogin }) {
     <div dir="rtl" className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <img src="/logo.png" alt="Logo" className="h-16 w-16 rounded-xl mx-auto mb-4 object-contain" />
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" className="h-16 w-16 rounded-xl mx-auto mb-4 object-contain" />
           <h1 className="text-xl font-semibold text-gray-900">מעבר משרדים</h1>
           <p className="text-sm text-gray-400 mt-1">ישראל קנדה ואקרו</p>
         </div>
