@@ -8,7 +8,6 @@ const DEPT_COLORS = {
   'מניבים':'#f97316','מוקד':'#06b6d4','סיטי הול':'#a855f7','מזכירות':'#78716c','מערכות מידע':'#0ea5e9',
 };
 
-const OVERLAY_SIZE = { w: 8, h: 10 };
 
 export default function Comparison({ movedSet, onSelectEmployee, searchQuery = '' }) {
   const [selection, setSelection] = useState(null);
@@ -219,11 +218,15 @@ function FloorPanel({
                 {isHighlighted && (
                   <div className="absolute pointer-events-none transition-all duration-300"
                     style={{
-                      left: `${coords.x - OVERLAY_SIZE.w / 2}%`, top: `${coords.y - OVERLAY_SIZE.h / 2}%`,
-                      width: `${OVERLAY_SIZE.w}%`, height: `${OVERLAY_SIZE.h}%`,
-                      backgroundColor: overlayColor, border: `3px solid ${overlayBorder}`,
-                      borderRadius: '8px', zIndex: 20,
-                      boxShadow: `0 0 20px ${overlayColor}, 0 0 40px ${overlayColor}`,
+                      left: `${coords.x - (coords.w || 6) / 2}%`,
+                      top: `${coords.y - (coords.h || 6) / 2}%`,
+                      width: `${coords.w || 6}%`,
+                      height: `${coords.h || 6}%`,
+                      backgroundColor: overlayColor,
+                      border: `3px solid ${overlayBorder}`,
+                      borderRadius: '6px',
+                      zIndex: 20,
+                      boxShadow: `0 0 25px ${overlayColor}, 0 0 50px ${overlayColor}`,
                     }} />
                 )}
                 <div className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all"
