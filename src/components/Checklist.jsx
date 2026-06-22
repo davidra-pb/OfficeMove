@@ -26,12 +26,6 @@ function getBldAbbr(bld) {
 
 function StatusBadge({ status }) {
   switch (status) {
-    case 'locked':
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-500">
-          <span>🔒</span> נעול
-        </span>
-      );
     case 'ready':
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
@@ -127,7 +121,7 @@ export default function Checklist({
         const totalCount = phaseEmployees.length;
         const progressPct = totalCount > 0 ? (movedCount / totalCount) * 100 : 0;
         const isSCC = phase.type === 'scc';
-        const isLocked = status === 'locked';
+        const isLocked = false;
 
         return (
           <div
