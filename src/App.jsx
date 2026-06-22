@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { db } from './firebase.js';
 import { PHASES, EMPLOYEES, DEPARTMENTS } from './data/moveData.js';
 import StatsBar from './components/StatsBar';
 import FloorMap from './components/FloorMap';
@@ -7,56 +9,38 @@ import Checklist from './components/Checklist';
 import Comparison from './components/Comparison';
 import EmployeeModal from './components/EmployeeModal';
 
-const LS_KEY = 'officeMoveProgress';
-
-function loadMovedSet() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) return new Set(JSON.parse(raw));
-  } catch { /* ignore corrupt data */ }
-  return new Set();
-}
-
-function saveMovedSet(set) {
-  localStorage.setItem(LS_KEY, JSON.stringify([...set]));
-}
+const PROGRESS_REF = () => doc(db, 'officeMove', 'progress');
 
 export default function App() {
-  const [movedSet, setMovedSet] = useState(() => loadMovedSet());
+  const [movedSet, setMovedSet] = useState(new Set());
   const [activeTab, setActiveTab] = useState('checklist');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [dayFilter, setDayFilter] = useState(null);
 
-  // Persist movedSet to localStorage on every change
+  // Subscribe to Firestore — all users get live updates
   useEffect(() => {
-    saveMovedSet(movedSet);
-  }, [movedSet]);
-
-  const toggleMoved = useCallback((empId) => {
-    setMovedSet((prev) => {
-      const next = new Set(prev);
-      if (next.has(empId)) {
-        next.delete(empId);
+    const ref = PROGRESS_REF();
+    const unsub = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        setMovedSet(new Set(snap.data().movedIds ?? []));
       } else {
-        next.add(empId);
+        setDoc(ref, { movedIds: [] });
       }
-      return next;
     });
+    return unsub;
   }, []);
 
-  const getPhaseStatus = useCallback((phaseId) => {
-    const phase = PHASES.find((p) => p.id === phaseId);
-    if (!phase) return 'locked';
-
-    // Check if all previous phases are complete
-    const prevPhases = PHASES.filter((p) => p.id < phaseId);
-    for (const prev of prevPhases) {
-      const prevEmps = EMPLOYEES.filter((e) => e.phase === prev.id);
-      const allPrevMoved = prevEmps.length > 0 && prevEmps.every((e) => movedSet.has(e.id));
-      if (!allPrevMoved) return 'locked';
+  const toggleMoved = useCallback((empId) => {
+    const ref = PROGRESS_REF();
+    if (movedSet.has(empId)) {
+      updateDoc(ref, { movedIds: arrayRemove(empId) });
+    } else {
+      updateDoc(ref, { movedIds: arrayUnion(empId) });
     }
+  }, [movedSet]);
 
+  const getPhaseStatus = useCallback((phaseId) => {
     const phaseEmps = EMPLOYEES.filter((e) => e.phase === phaseId);
     if (phaseEmps.length === 0) return 'ready';
 
@@ -67,31 +51,22 @@ export default function App() {
   }, [movedSet]);
 
   const markPhaseComplete = useCallback((phaseId) => {
-    const phaseEmps = EMPLOYEES.filter((e) => e.phase === phaseId);
-    setMovedSet((prev) => {
-      const next = new Set(prev);
-      phaseEmps.forEach((e) => next.add(e.id));
-      return next;
-    });
+    const phaseEmpIds = EMPLOYEES.filter((e) => e.phase === phaseId).map((e) => e.id);
+    updateDoc(PROGRESS_REF(), { movedIds: arrayUnion(...phaseEmpIds) });
   }, []);
 
-  // Filter employees based on search and day
   const filteredEmployees = useMemo(() => {
     return EMPLOYEES.filter((emp) => {
-      // Day filter
       if (dayFilter !== null) {
         const phase = PHASES.find((p) => p.id === emp.phase);
         if (phase && phase.day !== dayFilter) return false;
       }
-      // Search filter
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         const fullName = `${emp.first} ${emp.last}`.toLowerCase();
         const dept = emp.dept.toLowerCase();
         const rooms = `${emp.oldRoom} ${emp.newRoom}`.toLowerCase();
-        if (!fullName.includes(q) && !dept.includes(q) && !rooms.includes(q)) {
-          return false;
-        }
+        if (!fullName.includes(q) && !dept.includes(q) && !rooms.includes(q)) return false;
       }
       return true;
     });
