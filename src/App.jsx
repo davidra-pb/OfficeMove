@@ -192,7 +192,7 @@ export default function App() {
                     }} className="w-full flex items-center gap-3 px-4 py-2.5 text-right hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
                       <span className="text-sm font-medium text-gray-900">{emp.first} {emp.last}</span>
                       <span className="text-xs text-gray-400">{emp.dept}</span>
-                      <span className="text-xs text-gray-300 mr-auto font-mono">{emp.oldRoom} → {emp.newRoom}</span>
+                      <span className="text-xs text-gray-300 mr-auto font-mono">{emp.oldRoom} ← {emp.newRoom}</span>
                     </button>
                   ))}
                 </div>
@@ -211,7 +211,7 @@ export default function App() {
             onSelectEmployee={setSelectedEmployee} departments={DEPARTMENTS} />
         )}
         {activeTab === 'comparison' && (
-          <Comparison movedSet={movedSet} onSelectEmployee={setSelectedEmployee}
+          <Comparison movedSet={movedSet} onSelectEmployee={setSelectedEmployee} toggleMoved={toggleMoved}
             searchQuery={searchQuery} compareEmployee={compareEmployee} />
         )}
         {activeTab === 'floor' && (
