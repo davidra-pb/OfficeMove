@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { PHASES, EMPLOYEES } from '../data/moveData.js';
 import { FLOOR_PLANS, ROOM_COORDS, floorIdForRoom } from '../data/roomCoords.js';
 
@@ -9,10 +9,11 @@ const DEPT_COLORS = {
 };
 
 
-export default function Comparison({ movedSet, onSelectEmployee, searchQuery = '' }) {
+export default function Comparison({ movedSet, onSelectEmployee, searchQuery = '', compareEmployee }) {
   const [selection, setSelection] = useState(null);
   const [leftFloor, setLeftFloor] = useState('floor8_ic');
   const [rightFloor, setRightFloor] = useState('floor8_ic');
+  const [fullscreen, setFullscreen] = useState(false);
 
   const phaseColorMap = useMemo(() => {
     const m = {};
@@ -58,6 +59,16 @@ export default function Comparison({ movedSet, onSelectEmployee, searchQuery = '
     if (newFl) setLeftFloor(newFl);
   }, []);
 
+  useEffect(() => {
+    if (compareEmployee) handleSelectEmployee(compareEmployee);
+  }, [compareEmployee, handleSelectEmployee]);
+
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape' && fullscreen) setFullscreen(false); };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [fullscreen]);
+
   const handleSelectRoom = useCallback((roomId, side) => {
     if (side === 'right') {
       const emps = oldRoomMap[roomId] || [];
@@ -100,92 +111,75 @@ export default function Comparison({ movedSet, onSelectEmployee, searchQuery = '
   const rightPlan = FLOOR_PLANS.find(f => f.id === rightFloor);
   const leftPlan = FLOOR_PLANS.find(f => f.id === leftFloor);
 
-  return (
-    <div className="space-y-3">
-      {selection && (
-        <div className="bg-white rounded-xl shadow-lg border-2 border-indigo-200 p-4 slide-in">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg font-bold text-gray-800">
-                  {selection.employees.length === 1 ? `${selection.employees[0].first} ${selection.employees[0].last}` : `${selection.employees.length} עובדים`}
-                </span>
-                {selection.employees.length === 1 && (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: DEPT_COLORS[selection.employees[0].dept] || '#6b7280' }}>
-                    {selection.employees[0].dept}
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {selection.employees.map(emp => {
-                  const phase = PHASES.find(p => p.id === emp.phase);
-                  return (
-                    <div key={emp.id} onClick={() => onSelectEmployee(emp)}
-                      className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-100 transition-colors border border-gray-200">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
-                      <span className="text-sm font-medium text-gray-800">{emp.first} {emp.last}</span>
-                      <span className="text-gray-400 text-xs">|</span>
-                      <span className="text-xs text-red-500 font-mono">{emp.oldRoom}</span>
-                      <span className="text-gray-400">→</span>
-                      <span className="text-xs text-green-600 font-mono font-bold">{emp.newRoom}</span>
-                      {phase && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: phase.color }} />}
-                      {movedSet.has(emp.id) && <span className="text-green-500 text-xs font-bold">✓</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <button onClick={clearSelection} className="px-3 py-1.5 rounded-lg text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors shrink-0">✕ נקה בחירה</button>
-          </div>
-        </div>
-      )}
+  const panelProps = {
+    current: {
+      title: 'מיקום נוכחי',
+      plan: rightPlan, allPlans: FLOOR_PLANS, activePlanId: rightFloor, onChangePlan: setRightFloor,
+      imageKey: 'oldImage', roomMap: oldRoomMap,
+      highlightedRooms: selectedOldRooms, selectedEmpIds,
+      phaseColorMap, movedSet,
+      onClickRoom: (rid) => handleSelectRoom(rid, 'right'), onClickEmployee: handleSelectEmployee,
+      overlayColor: 'rgba(239, 68, 68, 0.2)', overlayBorder: '#ef4444',
+    },
+    target: {
+      title: 'מיקום חדש',
+      plan: leftPlan, allPlans: FLOOR_PLANS, activePlanId: leftFloor, onChangePlan: setLeftFloor,
+      imageKey: 'newImage', roomMap: newRoomMap,
+      highlightedRooms: selectedNewRooms, selectedEmpIds,
+      phaseColorMap, movedSet,
+      onClickRoom: (rid) => handleSelectRoom(rid, 'left'), onClickEmployee: handleSelectEmployee,
+      overlayColor: 'rgba(34, 197, 94, 0.25)', overlayBorder: '#22c55e',
+    },
+  };
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <FloorPanel
-          title="מיקום חדש" titleColor="bg-gradient-to-l from-green-600 to-emerald-700"
-          plan={leftPlan} allPlans={FLOOR_PLANS} activePlanId={leftFloor} onChangePlan={setLeftFloor}
-          imageKey="newImage" roomMap={newRoomMap}
-          highlightedRooms={selectedNewRooms} selectedEmpIds={selectedEmpIds}
-          phaseColorMap={phaseColorMap} movedSet={movedSet}
-          onClickRoom={(rid) => handleSelectRoom(rid, 'left')} onClickEmployee={handleSelectEmployee}
-          overlayColor="rgba(34, 197, 94, 0.25)" overlayBorder="#22c55e"
-        />
-        <FloorPanel
-          title="מיקום נוכחי" titleColor="bg-gradient-to-l from-red-600 to-rose-700"
-          plan={rightPlan} allPlans={FLOOR_PLANS} activePlanId={rightFloor} onChangePlan={setRightFloor}
-          imageKey="oldImage" roomMap={oldRoomMap}
-          highlightedRooms={selectedOldRooms} selectedEmpIds={selectedEmpIds}
-          phaseColorMap={phaseColorMap} movedSet={movedSet}
-          onClickRoom={(rid) => handleSelectRoom(rid, 'right')} onClickEmployee={handleSelectEmployee}
-          overlayColor="rgba(239, 68, 68, 0.2)" overlayBorder="#ef4444"
-        />
+  const wrapper = fullscreen
+    ? 'fixed inset-0 z-50 bg-gray-100 flex flex-col'
+    : 'relative';
+
+  return (
+    <div className={wrapper} style={fullscreen ? undefined : { height: 'calc(100vh - 220px)' }}>
+      {/* Fullscreen toggle + selection info bar */}
+      <div className={`flex items-center justify-between px-3 py-1.5 shrink-0 ${fullscreen ? 'bg-gray-900' : ''}`}>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setFullscreen(!fullscreen)}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+              fullscreen
+                ? 'bg-white/10 text-white hover:bg-white/20'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}>
+            {fullscreen ? 'יציאה ממסך מלא ✕' : 'מסך מלא ⛶'}
+          </button>
+          {fullscreen && <span className="text-xs text-gray-400">ESC ליציאה</span>}
+        </div>
+
+        {selection && (
+          <div className="flex items-center gap-3 animate-fade-in">
+            {selection.employees.map(emp => (
+              <div key={emp.id} onClick={() => onSelectEmployee(emp)}
+                className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
+                <span className={`text-sm font-medium ${fullscreen ? 'text-white' : 'text-gray-900'}`}>{emp.first} {emp.last}</span>
+                <span className="text-xs text-gray-400 font-mono">{emp.oldRoom} → {emp.newRoom}</span>
+              </div>
+            ))}
+            <button onClick={clearSelection} className="text-gray-400 hover:text-gray-300 text-xs">✕</button>
+          </div>
+        )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-4">
-        <h3 className="text-sm font-bold text-gray-600 mb-3">בחר עובד לצפייה בהשוואה</h3>
-        <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
-          {searchResults.map(emp => {
-            const isSelected = selectedEmpIds.has(emp.id);
-            const pc = phaseColorMap[emp.phase] || '#6b7280';
-            return (
-              <button key={emp.id} onClick={() => handleSelectEmployee(emp)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${isSelected ? 'text-white shadow-md scale-105' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                style={isSelected ? { backgroundColor: pc } : undefined}>
-                {emp.first} {emp.last}
-                <span className="text-[10px] opacity-70 mr-1">({emp.oldRoom}→{emp.newRoom})</span>
-              </button>
-            );
-          })}
-        </div>
+      {/* Side by side maps */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 flex-1 min-h-0 px-1 pb-1">
+        <FloorPanel {...panelProps.current} fullscreen={fullscreen} />
+        <FloorPanel {...panelProps.target} fullscreen={fullscreen} />
       </div>
     </div>
   );
 }
 
 function FloorPanel({
-  title, titleColor, plan, allPlans, activePlanId, onChangePlan, imageKey,
+  title, plan, allPlans, activePlanId, onChangePlan, imageKey,
   roomMap, highlightedRooms, selectedEmpIds, phaseColorMap, movedSet,
-  onClickRoom, onClickEmployee, overlayColor, overlayBorder,
+  onClickRoom, onClickEmployee, overlayColor, overlayBorder, fullscreen,
 }) {
   const floorRooms = useMemo(() => {
     return Object.entries(ROOM_COORDS).filter(([, c]) => c.floor === activePlanId);
@@ -194,22 +188,27 @@ function FloorPanel({
   const imageSrc = plan?.[imageKey];
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-      <div className={`${titleColor} text-white px-4 py-2.5 flex items-center justify-between`}>
-        <h3 className="text-base font-bold">{title}</h3>
-        <span className="text-sm text-white/70">{plan?.label}</span>
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col h-full min-h-0">
+      <div className={`px-3 py-1.5 flex items-center gap-3 shrink-0 ${
+        title === 'מיקום נוכחי' ? 'bg-amber-50 border-b border-amber-200' : 'bg-sky-50 border-b border-sky-200'
+      }`}>
+        <span className={`text-xs font-semibold whitespace-nowrap ${
+          title === 'מיקום נוכחי' ? 'text-amber-700' : 'text-sky-700'
+        }`}>{title}</span>
+        <div className="flex gap-1 flex-1 overflow-x-auto">
+          {allPlans.map(fp => (
+            <button key={fp.id} onClick={() => onChangePlan(fp.id)}
+              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors whitespace-nowrap ${
+                activePlanId === fp.id ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-600'
+              }`}>
+              {fp.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="flex gap-1 px-3 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
-        {allPlans.map(fp => (
-          <button key={fp.id} onClick={() => onChangePlan(fp.id)}
-            className={`px-2 py-1 rounded text-[10px] font-semibold transition-colors ${activePlanId === fp.id ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>
-            {fp.label}
-          </button>
-        ))}
-      </div>
-      <div className="relative overflow-auto" style={{ maxHeight: '65vh' }}>
+      <div className="relative overflow-auto flex-1 min-h-0">
         <div className="relative inline-block min-w-full">
-          <img src={imageSrc} alt={plan?.label} className="w-full h-auto block" style={{ minWidth: '500px' }} draggable={false} />
+          <img src={imageSrc} alt={plan?.label} className="w-full h-auto block" draggable={false} />
           {floorRooms.map(([roomId, coords]) => {
             const occs = roomMap[roomId] || [];
             const isHighlighted = highlightedRooms.has(roomId);
