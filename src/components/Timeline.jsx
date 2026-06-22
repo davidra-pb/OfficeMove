@@ -60,12 +60,13 @@ function hourToY(hour) {
   return (hour - HOUR_START) * PX_PER_HOUR;
 }
 
-function darkenColor(hex, amount = 0.3) {
-  const num = parseInt(hex.slice(1), 16);
-  const r = Math.max(0, ((num >> 16) & 0xff) - Math.round(255 * amount));
-  const g = Math.max(0, ((num >> 8) & 0xff) - Math.round(255 * amount));
-  const b = Math.max(0, (num & 0xff) - Math.round(255 * amount));
-  return `rgb(${r}, ${g}, ${b})`;
+function hexToRgb(hex) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  return {
+    r: (num >> 16) & 0xff,
+    g: (num >> 8) & 0xff,
+    b: num & 0xff,
+  };
 }
 
 function isNowInRange() {
@@ -88,35 +89,16 @@ function getNowPosition() {
    Sub-components
    ──────────────────────────────────────────────────────── */
 
-function SyncIcon({ color }) {
-  return (
-    <svg
-      className="w-4 h-4 animate-spin"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth={2.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 2v6h-6" />
-      <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-      <path d="M3 22v-6h6" />
-      <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-    </svg>
-  );
-}
-
 function StatusDot({ status }) {
   const styles = {
-    locked: 'bg-gray-400',
-    ready: 'bg-blue-500',
-    in_progress: 'bg-yellow-400 animate-pulse',
+    locked: 'bg-gray-300',
+    ready: 'bg-gray-300',
+    in_progress: 'bg-amber-400',
     complete: 'bg-green-500',
   };
   return (
     <span
-      className={`inline-block w-2.5 h-2.5 rounded-full shrink-0 ${styles[status] || 'bg-gray-300'}`}
+      className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${styles[status] || 'bg-gray-300'}`}
     />
   );
 }
@@ -132,9 +114,9 @@ function PhaseBar({
   getPhaseStatus,
   onSelectEmployee,
   timeRange,
+  expanded,
+  onToggleExpand,
 }) {
-  const [expanded, setExpanded] = useState(false);
-
   const top = hourToY(timeRange.start);
   const height = (timeRange.end - timeRange.start) * PX_PER_HOUR;
   const status = getPhaseStatus(phase.id);
@@ -144,55 +126,56 @@ function PhaseBar({
   const progressPct = totalCount > 0 ? (movedCount / totalCount) * 100 : 0;
   const isSCC = phase.type === 'scc';
 
+  const { r, g, b } = hexToRgb(phase.color);
+  const bgColor = `rgba(${r}, ${g}, ${b}, 0.15)`;
+
   return (
     <div
-      className="absolute inset-x-2 rounded-lg overflow-visible cursor-pointer transition-shadow hover:shadow-lg group"
+      className="absolute inset-x-2 rounded-md overflow-visible cursor-pointer transition-colors group"
       style={{
         top: `${top}px`,
         height: `${Math.max(height, 32)}px`,
-        border: isSCC ? `2px solid ${phase.color}` : '1px solid rgba(0,0,0,0.08)',
-        animation: isSCC ? 'scc-pulse 2s ease-in-out infinite' : undefined,
+        backgroundColor: bgColor,
+        borderRight: `3px solid ${phase.color}`,
       }}
-      onClick={() => setExpanded(!expanded)}
+      onClick={() => onToggleExpand(phase.id)}
     >
-      {/* Background fill */}
-      <div
-        className="absolute inset-0 rounded-lg"
-        style={{ backgroundColor: phase.colorLight || phase.color + '22' }}
-      />
-
-      {/* Progress fill */}
-      <div
-        className="absolute inset-y-0 right-0 rounded-lg transition-all duration-500 ease-out"
-        style={{
-          width: `${progressPct}%`,
-          backgroundColor: darkenColor(phase.color, 0.05),
-          opacity: 0.35,
-        }}
-      />
-
       {/* Content */}
       <div className="relative z-10 flex items-center gap-2 px-3 h-full min-h-[32px]">
         <StatusDot status={status} />
 
-        {isSCC && <SyncIcon color={phase.color} />}
+        {isSCC && (
+          <span
+            className="inline-block w-2 h-2 rounded-full shrink-0"
+            style={{ backgroundColor: '#a855f7' }}
+          />
+        )}
 
-        <span
-          className="text-xs font-bold truncate"
-          style={{ color: darkenColor(phase.color, 0.35) }}
-        >
+        <span className="text-xs font-medium text-gray-700 truncate">
           {phase.name}
         </span>
 
-        <span className="text-[10px] text-gray-500 whitespace-nowrap mr-auto">
+        <span className="text-[10px] text-gray-400 whitespace-nowrap mr-auto">
           {movedCount}/{totalCount} הועברו
         </span>
+      </div>
+
+      {/* Progress fill — thin bar at bottom */}
+      <div className="absolute bottom-0 right-0 left-0 h-1 rounded-b-md overflow-hidden">
+        <div
+          className="h-full transition-all duration-500 ease-out rounded-b-md"
+          style={{
+            width: `${progressPct}%`,
+            backgroundColor: phase.color,
+            opacity: 0.6,
+          }}
+        />
       </div>
 
       {/* Expanded employee list */}
       {expanded && phaseEmployees.length > 0 && (
         <div
-          className="absolute right-0 left-0 z-30 bg-white rounded-b-lg shadow-xl border border-gray-200 p-2 flex flex-wrap gap-1.5 max-h-40 overflow-y-auto"
+          className="absolute right-0 left-0 z-30 bg-white rounded-b-xl border border-gray-200 p-2 flex flex-wrap gap-1.5 max-h-40 overflow-y-auto"
           style={{ top: `${Math.max(height, 32)}px` }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -202,10 +185,10 @@ function PhaseBar({
               <button
                 key={emp.id}
                 onClick={() => onSelectEmployee(emp)}
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-colors cursor-pointer ${
+                className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors cursor-pointer ${
                   isMoved
-                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
                 }`}
               >
                 <span>
@@ -233,176 +216,6 @@ function PhaseBar({
 }
 
 /* ────────────────────────────────────────────────────────
-   DependencyArrows — SVG connecting lines
-   ──────────────────────────────────────────────────────── */
-
-function DependencyArrows({ phases, dayColumnRefs }) {
-  const [positions, setPositions] = useState([]);
-
-  useEffect(() => {
-    // Recalculate positions on every render
-    const newPositions = [];
-
-    for (const [fromId, toId] of DEPENDENCIES) {
-      const fromPhase = phases.find((p) => p.id === fromId);
-      const toPhase = phases.find((p) => p.id === toId);
-      if (!fromPhase || !toPhase) continue;
-
-      const fromTime = PHASE_TIMES[fromId];
-      const toTime = PHASE_TIMES[toId];
-      if (!fromTime || !toTime) continue;
-
-      const fromRange = parseTime(fromTime);
-      const toRange = parseTime(toTime);
-
-      const fromBottom = hourToY(fromRange.end);
-      const toTop = hourToY(toRange.start);
-
-      // Same day: simple vertical dashed line
-      if (fromPhase.day === toPhase.day) {
-        newPositions.push({
-          type: 'same-day',
-          day: fromPhase.day,
-          y1: fromBottom,
-          y2: toTop,
-        });
-      } else {
-        // Cross-day: from bottom of day1 col to top of day2 col
-        newPositions.push({
-          type: 'cross-day',
-          fromDay: fromPhase.day,
-          toDay: toPhase.day,
-          y1: fromBottom,
-          y2: toTop,
-        });
-      }
-    }
-
-    setPositions(newPositions);
-  }, [phases]);
-
-  return (
-    <>
-      {positions.map((pos, i) => {
-        if (pos.type === 'same-day') {
-          const colRef = dayColumnRefs.current[pos.day];
-          if (!colRef) return null;
-          return (
-            <svg
-              key={i}
-              className="absolute pointer-events-none z-0"
-              style={{
-                top: 0,
-                right: 0,
-                left: 0,
-                height: `${TIMELINE_HEIGHT}px`,
-              }}
-            >
-              <line
-                x1="50%"
-                y1={pos.y1}
-                x2="50%"
-                y2={pos.y2}
-                stroke="#94a3b8"
-                strokeWidth="1.5"
-                strokeDasharray="4 3"
-                markerEnd="url(#arrowhead)"
-              />
-            </svg>
-          );
-        }
-        return null;
-      })}
-    </>
-  );
-}
-
-/* ────────────────────────────────────────────────────────
-   CrossDayArrow — single SVG overlay for cross-day deps
-   ──────────────────────────────────────────────────────── */
-
-function CrossDayArrows({ phases, containerRef }) {
-  const [arrows, setArrows] = useState([]);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const container = containerRef.current;
-    const containerRect = container.getBoundingClientRect();
-
-    const newArrows = [];
-
-    for (const [fromId, toId] of DEPENDENCIES) {
-      const fromPhase = phases.find((p) => p.id === fromId);
-      const toPhase = phases.find((p) => p.id === toId);
-      if (!fromPhase || !toPhase || fromPhase.day === toPhase.day) continue;
-
-      const fromTime = PHASE_TIMES[fromId];
-      const toTime = PHASE_TIMES[toId];
-      if (!fromTime || !toTime) continue;
-
-      const fromRange = parseTime(fromTime);
-      const toRange = parseTime(toTime);
-
-      // Find the column elements
-      const fromCol = container.querySelector(`[data-day="${fromPhase.day}"]`);
-      const toCol = container.querySelector(`[data-day="${toPhase.day}"]`);
-      if (!fromCol || !toCol) continue;
-
-      const fromRect = fromCol.getBoundingClientRect();
-      const toRect = toCol.getBoundingClientRect();
-
-      const fromX = fromRect.left - containerRect.left + fromRect.width * 0.5;
-      const toX = toRect.left - containerRect.left + toRect.width * 0.5;
-
-      const headerOffset = 44; // approximate header height inside day column
-      const fromY = headerOffset + hourToY(fromRange.end);
-      const toY = headerOffset + hourToY(toRange.start);
-
-      newArrows.push({ fromX, toX, fromY, toY });
-    }
-
-    setArrows(newArrows);
-  }, [phases, containerRef]);
-
-  if (arrows.length === 0) return null;
-
-  return (
-    <svg
-      className="absolute inset-0 w-full h-full pointer-events-none z-10"
-      style={{ overflow: 'visible' }}
-    >
-      <defs>
-        <marker
-          id="arrowhead-cross"
-          markerWidth="8"
-          markerHeight="6"
-          refX="8"
-          refY="3"
-          orient="auto"
-        >
-          <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
-        </marker>
-      </defs>
-      {arrows.map((a, i) => {
-        const midY = (a.fromY + a.toY) / 2;
-        return (
-          <path
-            key={i}
-            d={`M ${a.fromX} ${a.fromY} C ${a.fromX} ${midY}, ${a.toX} ${midY}, ${a.toX} ${a.toY}`}
-            stroke="#94a3b8"
-            strokeWidth="1.5"
-            strokeDasharray="6 4"
-            fill="none"
-            markerEnd="url(#arrowhead-cross)"
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
-/* ────────────────────────────────────────────────────────
    DayColumn — a single day on the Gantt chart
    ──────────────────────────────────────────────────────── */
 
@@ -415,6 +228,8 @@ function DayColumn({
   getPhaseStatus,
   onSelectEmployee,
   dimmed,
+  expandedPhaseId,
+  onToggleExpand,
 }) {
   const hours = [];
   for (let h = HOUR_START; h <= HOUR_END; h++) {
@@ -424,19 +239,13 @@ function DayColumn({
   return (
     <div
       data-day={day}
-      className={`flex-1 min-w-[280px] rounded-xl border transition-opacity duration-300 ${
-        dimmed ? 'opacity-40 border-gray-200 bg-gray-50' : 'border-gray-200 bg-white'
+      className={`flex-1 min-w-[280px] border border-gray-200 rounded-xl transition-opacity duration-300 ${
+        dimmed ? 'opacity-30' : ''
       }`}
     >
       {/* Day header */}
-      <div
-        className="text-center py-3 font-bold text-sm border-b border-gray-200 rounded-t-xl"
-        style={{
-          backgroundColor: day === 1 ? '#dbeafe' : '#fef3c7',
-          color: day === 1 ? '#1e40af' : '#92400e',
-        }}
-      >
-        {label}
+      <div className="bg-gray-50 rounded-t-xl px-4 py-2 border-b border-gray-200">
+        <span className="text-sm font-semibold text-gray-700">{label}</span>
       </div>
 
       {/* Timeline body */}
@@ -449,7 +258,7 @@ function DayColumn({
               className="absolute right-0 left-0 flex items-center justify-center"
               style={{ top: `${hourToY(h)}px` }}
             >
-              <span className="text-[10px] text-gray-400 font-mono leading-none">
+              <span className="text-xs text-gray-300 font-mono leading-none">
                 {String(h).padStart(2, '0')}:00
               </span>
             </div>
@@ -472,18 +281,6 @@ function DayColumn({
             className="absolute inset-0 w-full pointer-events-none z-[1]"
             style={{ height: `${TIMELINE_HEIGHT}px` }}
           >
-            <defs>
-              <marker
-                id={`arrowhead-${day}`}
-                markerWidth="7"
-                markerHeight="5"
-                refX="7"
-                refY="2.5"
-                orient="auto"
-              >
-                <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8" />
-              </marker>
-            </defs>
             {DEPENDENCIES.filter(([fromId, toId]) => {
               const fromPhase = phases.find((p) => p.id === fromId);
               const toPhase = phases.find((p) => p.id === toId);
@@ -504,10 +301,8 @@ function DayColumn({
                   y1={y1}
                   x2="50%"
                   y2={y2}
-                  stroke="#94a3b8"
-                  strokeWidth="1.5"
-                  strokeDasharray="4 3"
-                  markerEnd={`url(#arrowhead-${day})`}
+                  stroke="#e5e7eb"
+                  strokeWidth="1"
                 />
               );
             })}
@@ -529,6 +324,8 @@ function DayColumn({
                   getPhaseStatus={getPhaseStatus}
                   onSelectEmployee={onSelectEmployee}
                   timeRange={timeRange}
+                  expanded={expandedPhaseId === phase.id}
+                  onToggleExpand={onToggleExpand}
                 />
               );
             })}
@@ -552,29 +349,26 @@ export default function Timeline({
 }) {
   const containerRef = useRef(null);
   const dayColumnRefs = useRef({});
+  const [expandedPhaseId, setExpandedPhaseId] = useState(null);
+
+  const handleToggleExpand = (phaseId) => {
+    setExpandedPhaseId((prev) => (prev === phaseId ? null : phaseId));
+  };
 
   const showNow = useMemo(() => isNowInRange(), []);
   const nowPos = useMemo(() => (showNow ? getNowPosition() : null), [showNow]);
 
   return (
     <div dir="rtl" className="space-y-4">
-      {/* SCC pulse animation */}
-      <style>{`
-        @keyframes scc-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(168,85,247,0.4); }
-          50% { box-shadow: 0 0 0 6px rgba(168,85,247,0); }
-        }
-      `}</style>
-
       {/* Timeline container */}
       <div
         ref={containerRef}
-        className="relative bg-white rounded-2xl shadow-lg p-5 overflow-x-auto"
+        className="bg-white border border-gray-200 rounded-xl p-6"
       >
-        <h3 className="text-lg font-bold text-gray-800 mb-4">ציר זמן — מעבר משרדים</h3>
+        <h3 className="text-base font-semibold text-gray-900 mb-5">ציר זמן — מעבר משרדים</h3>
 
         {/* Day columns */}
-        <div className="flex flex-col md:flex-row gap-4 relative">
+        <div className="flex flex-col md:flex-row gap-5 relative">
           <DayColumn
             day={1}
             label={DAY_LABELS[1]}
@@ -584,23 +378,13 @@ export default function Timeline({
             getPhaseStatus={getPhaseStatus}
             onSelectEmployee={onSelectEmployee}
             dimmed={dayFilter === 2}
+            expandedPhaseId={expandedPhaseId}
+            onToggleExpand={handleToggleExpand}
           />
 
-          {/* Cross-day dependency arrow overlay */}
+          {/* Cross-day dependency line */}
           <div className="hidden md:flex items-center justify-center w-8 shrink-0 relative">
             <svg className="w-full" style={{ height: `${TIMELINE_HEIGHT}px` }}>
-              <defs>
-                <marker
-                  id="arrowhead-mid"
-                  markerWidth="8"
-                  markerHeight="6"
-                  refX="8"
-                  refY="3"
-                  orient="auto"
-                >
-                  <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
-                </marker>
-              </defs>
               {(() => {
                 // Find cross-day dependency: Phase 4 (day1) -> Phase 5 (day2)
                 const fromTime = PHASE_TIMES[4];
@@ -614,11 +398,9 @@ export default function Timeline({
                 return (
                   <path
                     d={`M 0 ${y1} C 16 ${(y1 + y2) / 2}, 16 ${(y1 + y2) / 2}, 32 ${y2}`}
-                    stroke="#94a3b8"
-                    strokeWidth="1.5"
-                    strokeDasharray="6 4"
+                    stroke="#e5e7eb"
+                    strokeWidth="1"
                     fill="none"
-                    markerEnd="url(#arrowhead-mid)"
                   />
                 );
               })()}
@@ -634,6 +416,8 @@ export default function Timeline({
             getPhaseStatus={getPhaseStatus}
             onSelectEmployee={onSelectEmployee}
             dimmed={dayFilter === 1}
+            expandedPhaseId={expandedPhaseId}
+            onToggleExpand={handleToggleExpand}
           />
 
           {/* "Now" indicator */}
@@ -647,12 +431,9 @@ export default function Timeline({
                 width: '50%',
               }}
             >
-              <div className="flex items-center gap-1">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-md" />
-                <div className="flex-1 h-[2px] bg-red-500" />
-                <span className="text-[10px] font-bold text-red-600 bg-white px-1 rounded">
-                  עכשיו
-                </span>
+              <div className="flex items-center gap-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                <div className="flex-1 h-px bg-indigo-400" />
               </div>
             </div>
           )}
@@ -662,52 +443,16 @@ export default function Timeline({
       {/* Legend */}
       <div
         dir="rtl"
-        className="bg-white rounded-xl shadow-sm px-5 py-3 flex flex-wrap items-center gap-5 text-sm"
+        className="flex items-center gap-4 px-1"
       >
-        <span className="text-gray-500 font-semibold text-xs">מקרא:</span>
-
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-3 rounded bg-gradient-to-l from-blue-200 to-blue-400 border border-blue-300" />
-          <span className="text-gray-600 text-xs">שלב גל (Wave)</span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-blue-400" />
+          <span className="text-xs text-gray-400">גל</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-3 rounded border-2 border-purple-400 bg-purple-100 relative">
-            <div className="absolute inset-0 animate-pulse bg-purple-200 rounded" />
-          </div>
-          <span className="text-gray-600 text-xs">סיבוב מסונכרן (SCC)</span>
-        </div>
-
-        <div className="flex items-center gap-2 mr-4">
-          <StatusDot status="locked" />
-          <span className="text-gray-500 text-xs">נעול</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <StatusDot status="ready" />
-          <span className="text-gray-500 text-xs">מוכן</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <StatusDot status="in_progress" />
-          <span className="text-gray-500 text-xs">בתהליך</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <StatusDot status="complete" />
-          <span className="text-gray-500 text-xs">הושלם</span>
-        </div>
-
-        <div className="flex items-center gap-2 mr-4">
-          <svg width="24" height="8">
-            <line
-              x1="0"
-              y1="4"
-              x2="24"
-              y2="4"
-              stroke="#94a3b8"
-              strokeWidth="1.5"
-              strokeDasharray="4 3"
-            />
-          </svg>
-          <span className="text-gray-500 text-xs">תלות בין שלבים</span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-purple-500" />
+          <span className="text-xs text-gray-400">סיבוב מסונכרן</span>
         </div>
       </div>
     </div>
