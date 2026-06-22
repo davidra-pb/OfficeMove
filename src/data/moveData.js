@@ -6,7 +6,7 @@ export const PHASES = [
   { id: 5, name: 'פוסט-D גל 1', day: 2, time: '08:00-09:00', type: 'wave', color: '#fb923c', colorLight: '#fff7ed', count: 9 },
   { id: 6, name: 'פוסט-D גל 2', day: 2, time: '09:00-10:00', type: 'wave', color: '#fdba74', colorLight: '#fff7ed', count: 4 },
   { id: 7, name: 'סיבוב C — 11 עובדים', day: 2, time: '10:00-11:00', type: 'scc', color: '#8b5cf6', colorLight: '#ede9fe', count: 11 },
-  { id: 8, name: 'פוסט-C', day: 2, time: '11:00-13:00', type: 'wave', color: '#2dd4bf', colorLight: '#ccfbf1', count: 5 },
+  { id: 8, name: 'פוסט-C', day: 2, time: '11:00-13:00', type: 'wave', color: '#2dd4bf', colorLight: '#ccfbf1', count: 6 },
   { id: 9, name: 'סיבוב B — 7 עובדים', day: 2, time: '13:00-14:00', type: 'scc', color: '#6366f1', colorLight: '#e0e7ff', count: 7 },
   { id: 10, name: 'פוסט-B', day: 2, time: '14:00-15:00', type: 'wave', color: '#fb7185', colorLight: '#ffe4e6', count: 2 },
   { id: 11, name: 'סיבוב A — 3 עובדים', day: 2, time: '15:00-15:30', type: 'scc', color: '#ef4444', colorLight: '#fee2e2', count: 3 },
@@ -153,6 +153,7 @@ export const EMPLOYEES = [
   { id: 65, first: 'גיא', last: 'מרגולין', dept: 'הנדסה', oldRoom: '05A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '16D', newBld: 'אקרו', newFloor: 8, phase: 8, replaces: 'אוהד יצחקי, עידן נחום' },
   { id: 105, first: 'צחי', last: 'אהרוני', dept: 'הנדסה', oldRoom: '1C', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '9E', newBld: 'אקרו', newFloor: 7, phase: 8, replaces: 'ליאת כהן גוטמן, נוי מולה, נעמה אטלן' },
   { id: 37, first: 'מני', last: 'כהן', dept: 'שיווק', oldRoom: 'חדש', oldBld: 'עובד חדש', oldFloor: null, newRoom: '1C', newBld: 'ישראל קנדה', newFloor: 6, phase: 8, replaces: 'צחי אהרוני (הנדסה)' },
+  { id: 113, first: 'עומר', last: 'גולד', dept: 'מכירות', oldRoom: '25D', oldBld: 'אקרו', oldFloor: 8, newRoom: '05A', newBld: 'ישראל קנדה', newFloor: 8, phase: 8, replaces: 'גיא מרגולין (הנדסה)' },
   // Phase 9: SCC-B (7 emp)
   { id: 4, first: 'עופר', last: 'ריחני', dept: 'מכירות', oldRoom: '19A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '12A', newBld: 'ישראל קנדה', newFloor: 8, phase: 9, replaces: 'נועה בן פורת (כללי)' },
   { id: 12, first: 'ערן', last: 'קאופמן', dept: 'מכירות', oldRoom: '31D', oldBld: 'אקרו', oldFloor: 8, newRoom: '19A', newBld: 'ישראל קנדה', newFloor: 8, phase: 9, replaces: 'עופר ריחני (מכירות)' },
