@@ -124,7 +124,7 @@ export default function App() {
     <div dir="rtl" className="min-h-screen bg-gray-50 text-gray-900">
       <header className="bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-          <img src="/logo.png" alt="Logo" className="h-10 w-10 rounded-lg object-contain" />
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" className="h-10 w-10 rounded-lg object-contain" />
           <div className="flex-1">
             <h1 className="text-xl font-semibold tracking-tight text-white">
               מעבר משרדים — ישראל קנדה ואקרו
