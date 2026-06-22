@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { PHASES } from '../data/moveData.js';
-import { FLOOR_PLANS, ROOM_COORDS } from '../data/roomCoords.js';
+import { FLOOR_PLANS, ROOM_COORDS, ROOM_LOOKUP } from '../data/roomCoords.js';
 
 export default function FloorMap({
   employees,
@@ -42,6 +42,11 @@ export default function FloorMap({
       if (!room || room === 'חדש' || room === 'מזכירות') return;
       if (!m[room]) m[room] = [];
       m[room].push(emp);
+      const padded = room.replace(/^(\d)(\D)$/, '0$1$2');
+      if (padded !== room) {
+        if (!m[padded]) m[padded] = [];
+        m[padded].push(emp);
+      }
     });
     return m;
   }, [visibleEmployees, viewMode]);
@@ -50,7 +55,7 @@ export default function FloorMap({
     const q = (searchQuery || '').trim().toLowerCase();
     if (!q) return null;
     const set = new Set();
-    Object.keys(ROOM_COORDS).forEach(rid => {
+    Object.keys(ROOM_LOOKUP).forEach(rid => {
       if (rid.toLowerCase().includes(q)) set.add(rid);
       (roomOccupants[rid] || []).forEach(emp => {
         const name = `${emp.first} ${emp.last}`.toLowerCase();
@@ -140,7 +145,7 @@ export default function FloorMap({
         <div className="flex gap-1 bg-gray-100 rounded-lg p-1 flex-wrap">
           {FLOOR_PLANS.map(fp => {
             const isActive = activeFloor === fp.id;
-            const count = Object.entries(ROOM_COORDS)
+            const count = Object.entries(ROOM_LOOKUP)
               .filter(([, c]) => c.floor === fp.id)
               .reduce((s, [rid]) => s + (roomOccupants[rid]?.length || 0), 0);
             return (
