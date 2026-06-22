@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px currentColor; }
+  50% { box-shadow: 0 0 20px currentColor, 0 0 30px currentColor; }
+}
+
+.scc-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+:root {
+  --phase-1: #22c55e;
+  --phase-2: #38bdf8;
+  --phase-3: #fbbf24;
+  --phase-4: #a855f7;
+  --phase-5: #fb923c;
+  --phase-6: #fdba74;
+  --phase-7: #8b5cf6;
+  --phase-8: #2dd4bf;
+  --phase-9: #6366f1;
+  --phase-10: #fb7185;
+  --phase-11: #ef4444;
+}
