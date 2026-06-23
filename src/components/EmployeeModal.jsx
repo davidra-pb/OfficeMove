@@ -77,14 +77,20 @@ export default function EmployeeModal({ employee, isMoved, toggleMoved, onClose 
             <span className="text-xs text-gray-400">#{employee.id}</span>
           </div>
 
-          <button
-            onClick={() => toggleMoved(employee.id)}
-            className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-              isMoved ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50' : 'bg-gray-900 text-white hover:bg-gray-800'
-            }`}
-          >
-            {isMoved ? 'בטל סימון' : 'סמן כהועבר'}
-          </button>
+          {toggleMoved ? (
+            <button
+              onClick={() => toggleMoved(employee.id)}
+              className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                isMoved ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50' : 'bg-gray-900 text-white hover:bg-gray-800'
+              }`}
+            >
+              {isMoved ? 'בטל סימון' : 'סמן כהועבר'}
+            </button>
+          ) : (
+            <div className={`w-full py-2.5 rounded-lg text-sm font-medium text-center ${isMoved ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-50 text-gray-400 border border-gray-200'}`}>
+              {isMoved ? '✓ הועבר' : 'טרם הועבר'}
+            </div>
+          )}
         </div>
       </div>
     </div>
