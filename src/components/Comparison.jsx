@@ -163,13 +163,13 @@ export default function Comparison({ movedSet, onSelectEmployee, searchQuery = '
         </div>
 
         {selection && (
-          <div className="flex items-center gap-3 animate-fade-in mr-3">
+          <div className="flex items-center gap-2 animate-fade-in mr-3 flex-wrap">
             {selection.employees.map(emp => {
               const isMoved = movedSet.has(emp.id);
               const phase = PHASES.find(p => p.id === emp.phase);
               return (
               <div key={emp.id}
-                className={`flex items-center gap-3 rounded-xl px-4 py-2 ${fullscreen ? 'bg-white/10' : 'bg-gray-100 border border-gray-200'}`}>
+                className={`flex flex-wrap items-center gap-2 rounded-xl px-4 py-2 ${fullscreen ? 'bg-white/10' : 'bg-gray-100 border border-gray-200'}`}>
                 {/* Name + dept */}
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
@@ -180,7 +180,7 @@ export default function Comparison({ movedSet, onSelectEmployee, searchQuery = '
                   <span className={`text-sm ${fullscreen ? 'text-gray-400' : 'text-gray-500'}`}>{emp.dept}</span>
                 </div>
 
-                <span className={`text-sm ${fullscreen ? 'text-gray-600' : 'text-gray-300'}`}>|</span>
+                <span className={`hidden sm:inline text-sm ${fullscreen ? 'text-gray-600' : 'text-gray-300'}`}>|</span>
 
                 {/* Transition: old → new with buildings */}
                 <div className="flex items-center gap-2">
@@ -195,7 +195,7 @@ export default function Comparison({ movedSet, onSelectEmployee, searchQuery = '
                   </div>
                 </div>
 
-                <span className={`text-sm ${fullscreen ? 'text-gray-600' : 'text-gray-300'}`}>|</span>
+                <span className={`hidden sm:inline text-sm ${fullscreen ? 'text-gray-600' : 'text-gray-300'}`}>|</span>
 
                 {/* Phase + day/time */}
                 <div className="flex items-center gap-2">
@@ -205,19 +205,19 @@ export default function Comparison({ movedSet, onSelectEmployee, searchQuery = '
                       <span className={`text-sm ${fullscreen ? 'text-gray-400' : 'text-gray-500'}`}>
                         {phase.name}
                       </span>
-                      <span className={`text-xs ${fullscreen ? 'text-gray-500' : 'text-gray-400'}`}>
+                      <span className={`hidden sm:inline text-xs ${fullscreen ? 'text-gray-500' : 'text-gray-400'}`}>
                         יום {phase.day === 1 ? "א'" : "ב'"} {phase.time}
                       </span>
                     </>
                   )}
                 </div>
 
-                <span className={`text-sm ${fullscreen ? 'text-gray-600' : 'text-gray-300'}`}>|</span>
+                <span className={`hidden sm:inline text-sm ${fullscreen ? 'text-gray-600' : 'text-gray-300'}`}>|</span>
 
                 {/* Mark as moved */}
                 {toggleMoved && (
                   <button onClick={(e) => { e.stopPropagation(); toggleMoved(emp.id); }}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-3 py-1 min-h-[36px] rounded-lg text-sm font-medium transition-colors ${
                       isMoved
                         ? 'bg-green-100 text-green-700 hover:bg-green-200'
                         : fullscreen ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-900 text-white hover:bg-gray-800'
@@ -264,7 +264,7 @@ function FloorPanel({
         <div className="flex gap-1 flex-1 overflow-x-auto">
           {allPlans.map(fp => (
             <button key={fp.id} onClick={() => onChangePlan(fp.id)}
-              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors whitespace-nowrap ${
+              className={`px-2 py-1 rounded text-[10px] font-medium transition-colors whitespace-nowrap ${
                 activePlanId === fp.id ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-600'
               }`}>
               {fp.label}
