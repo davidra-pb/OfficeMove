@@ -34,7 +34,7 @@ export default function LoginScreen({ onLogin }) {
           <p className="text-sm text-gray-400 mt-1">ישראל קנדה ואקרו</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-6 space-y-4" onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e); }}>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">שם משתמש</label>
             <input
