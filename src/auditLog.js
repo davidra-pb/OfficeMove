@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase.js';
 
 const COLLECTION = 'auditLog';
@@ -20,6 +20,11 @@ export async function getAuditLog(limitCount = 200) {
   const q = query(collection(db, COLLECTION), orderBy('timestamp', 'desc'), limit(limitCount));
   const snap = await getDocs(q);
   return snap.docs.map(d => ({ id: d.id, ...d.data(), timestamp: d.data().timestamp?.toDate?.() || null }));
+}
+
+export async function clearAuditLog() {
+  const snap = await getDocs(collection(db, COLLECTION));
+  await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
 }
 
 export const ACTIONS = {
