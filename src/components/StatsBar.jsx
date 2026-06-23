@@ -51,7 +51,7 @@ export default function StatsBar({ employees, movedSet, phases }) {
       className="bg-white border border-gray-200 rounded-xl p-5 mb-6"
     >
       {/* Main stat + day stats — single row */}
-      <div className="flex items-baseline justify-between mb-3">
+      <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-3">
         <div className="flex items-baseline gap-2">
           <span className="text-2xl font-semibold tabular-nums text-gray-900">
             {stats.totalMoved} / {TOTAL_EMPLOYEES}
@@ -59,7 +59,7 @@ export default function StatsBar({ employees, movedSet, phases }) {
           <span className="text-sm text-gray-400">הועברו</span>
         </div>
 
-        <div className="flex items-baseline gap-4">
+        <div className="flex flex-wrap items-baseline gap-4">
           <span className="text-sm text-gray-500 tabular-nums">
             יום א': {stats.day1Moved}/{stats.day1Total}
           </span>
