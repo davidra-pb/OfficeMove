@@ -239,7 +239,7 @@ function DayColumn({
   return (
     <div
       data-day={day}
-      className={`flex-1 min-w-[280px] border border-gray-200 rounded-xl transition-opacity duration-300 ${
+      className={`flex-1 min-w-[220px] sm:min-w-[280px] border border-gray-200 rounded-xl transition-opacity duration-300 ${
         dimmed ? 'opacity-30' : ''
       }`}
     >
@@ -251,7 +251,7 @@ function DayColumn({
       {/* Timeline body */}
       <div className="relative flex" style={{ height: `${TIMELINE_HEIGHT}px` }}>
         {/* Time axis */}
-        <div className="w-12 shrink-0 relative border-l border-gray-200">
+        <div className="w-8 sm:w-12 shrink-0 relative border-l border-gray-200">
           {hours.map((h) => (
             <div
               key={h}
@@ -443,7 +443,7 @@ export default function Timeline({
       {/* Legend */}
       <div
         dir="rtl"
-        className="flex items-center gap-4 px-1"
+        className="flex flex-wrap items-center gap-4 px-1"
       >
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-blue-400" />
