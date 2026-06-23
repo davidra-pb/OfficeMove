@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from './firebase.js';
 import { PHASES, EMPLOYEES, DEPARTMENTS } from './data/moveData.js';
 import { getStoredSession, logout, seedUsersIfNeeded } from './auth.js';
+import { logAction, ACTIONS } from './auditLog.js';
 import LoginScreen from './components/LoginScreen';
 import StatsBar from './components/StatsBar';
 import FloorMap from './components/FloorMap';
@@ -10,7 +11,10 @@ import Timeline from './components/Timeline';
 import Checklist from './components/Checklist';
 import Comparison from './components/Comparison';
 import AdminPanel from './components/AdminPanel';
+import AuditLog from './components/AuditLog';
 import EmployeeModal from './components/EmployeeModal';
+
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 const PROGRESS_REF = () => doc(db, 'officeMove', 'progress');
 
@@ -23,6 +27,9 @@ export default function App() {
   const [dayFilter, setDayFilter] = useState(null);
   const [compareEmployee, setCompareEmployee] = useState(null);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const idleTimer = useRef(null);
+  const currentUserRef = useRef(currentUser);
+  useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
 
   useEffect(() => { seedUsersIfNeeded(); }, []);
 
@@ -38,22 +45,49 @@ export default function App() {
     return unsub;
   }, []);
 
-  const handleLogin = useCallback((user) => { setCurrentUser(user); }, []);
+  const handleLogin = useCallback((user) => {
+    setCurrentUser(user);
+    logAction(user.username, ACTIONS.LOGIN, { role: user.role });
+  }, []);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback((reason = 'manual') => {
+    const user = currentUserRef.current;
+    if (user) {
+      logAction(user.username, reason === 'idle' ? ACTIONS.IDLE_LOGOUT : ACTIONS.LOGOUT);
+    }
     logout();
     setCurrentUser(null);
     setActiveTab('checklist');
   }, []);
 
+  // Idle timeout — 30 min
+  useEffect(() => {
+    if (!currentUser) return;
+    const reset = () => {
+      clearTimeout(idleTimer.current);
+      idleTimer.current = setTimeout(() => handleLogout('idle'), IDLE_TIMEOUT_MS);
+    };
+    const events = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'scroll'];
+    events.forEach(e => window.addEventListener(e, reset, { passive: true }));
+    reset();
+    return () => {
+      events.forEach(e => window.removeEventListener(e, reset));
+      clearTimeout(idleTimer.current);
+    };
+  }, [currentUser, handleLogout]);
+
   const isAdmin = currentUser?.role === 'admin';
 
   const toggleMoved = useCallback((empId) => {
     const ref = PROGRESS_REF();
+    const emp = EMPLOYEES.find(e => e.id === empId);
+    const empName = emp ? `${emp.first} ${emp.last}` : String(empId);
     if (movedSet.has(empId)) {
       updateDoc(ref, { movedIds: arrayRemove(empId) });
+      logAction(currentUserRef.current?.username, ACTIONS.UNMARK_MOVED, { employee: empName });
     } else {
       updateDoc(ref, { movedIds: arrayUnion(empId) });
+      logAction(currentUserRef.current?.username, ACTIONS.MARK_MOVED, { employee: empName });
     }
   }, [movedSet]);
 
@@ -67,13 +101,17 @@ export default function App() {
   }, [movedSet]);
 
   const markPhaseComplete = useCallback((phaseId) => {
+    const phase = PHASES.find(p => p.id === phaseId);
     const phaseEmpIds = EMPLOYEES.filter((e) => e.phase === phaseId).map((e) => e.id);
     updateDoc(PROGRESS_REF(), { movedIds: arrayUnion(...phaseEmpIds) });
+    logAction(currentUserRef.current?.username, ACTIONS.MARK_PHASE_COMPLETE, { phase: phase?.name || phaseId });
   }, []);
 
   const unmarkPhase = useCallback((phaseId) => {
+    const phase = PHASES.find(p => p.id === phaseId);
     const phaseEmpIds = EMPLOYEES.filter((e) => e.phase === phaseId).map((e) => e.id);
     updateDoc(PROGRESS_REF(), { movedIds: arrayRemove(...phaseEmpIds) });
+    logAction(currentUserRef.current?.username, ACTIONS.UNMARK_PHASE, { phase: phase?.name || phaseId });
   }, []);
 
   const filteredEmployees = useMemo(() => {
@@ -106,12 +144,17 @@ export default function App() {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
+  const switchTab = useCallback((tabId) => {
+    setActiveTab(tabId);
+    logAction(currentUserRef.current?.username, ACTIONS.TAB_SWITCH, { tab: tabId });
+  }, []);
+
   const tabs = [
     { id: 'checklist', label: "צ'קליסט" },
     { id: 'comparison', label: 'ישן ↔ חדש' },
     { id: 'floor', label: 'מפת קומות' },
     { id: 'timeline', label: 'ציר זמן' },
-    ...(isAdmin ? [{ id: 'admin', label: 'ניהול' }] : []),
+    ...(isAdmin ? [{ id: 'admin', label: 'ניהול' }, { id: 'auditlog', label: 'יומן' }] : []),
   ];
 
   const dayButtons = [
@@ -123,7 +166,7 @@ export default function App() {
   return (
     <div dir="rtl" className="min-h-screen bg-gray-50 text-gray-900">
       <header className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
           <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" className="h-10 w-10 rounded-lg object-contain" />
           <div className="flex-1">
             <h1 className="text-xl font-semibold tracking-tight text-white">
@@ -131,7 +174,7 @@ export default function App() {
             </h1>
             <p className="mt-0.5 text-gray-400 text-sm">28-29.06.2026</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
             <span className="text-sm text-gray-300">
               {currentUser.username}
               {isAdmin && <span className="text-xs text-indigo-400 mr-1">(מנהל)</span>}
@@ -146,14 +189,14 @@ export default function App() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 mt-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 mt-6">
         <StatsBar employees={EMPLOYEES} phases={PHASES} movedSet={movedSet} departments={DEPARTMENTS} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 mt-6 flex flex-col md:flex-row md:items-center gap-4">
-        <div className="flex gap-4 border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 mt-6 flex flex-col md:flex-row md:items-center gap-4">
+        <div className="flex flex-wrap gap-4 border-b border-gray-200">
           {tabs.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            <button key={tab.id} onClick={() => switchTab(tab.id)}
               className={`pb-2 text-sm font-medium transition-colors ${
                 activeTab === tab.id ? 'text-gray-900 border-b-2 border-indigo-500' : 'text-gray-400 hover:text-gray-600'
               }`}>
@@ -189,7 +232,7 @@ export default function App() {
                       else setSelectedEmployee(emp);
                       setSearchQuery(`${emp.first} ${emp.last}`);
                       setShowAutocomplete(false);
-                    }} className="w-full flex items-center gap-3 px-4 py-2.5 text-right hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+                    }} className="w-full flex items-center gap-3 px-4 py-3 text-right hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
                       <span className="text-sm font-medium text-gray-900">{emp.first} {emp.last}</span>
                       <span className="text-xs text-gray-400">{emp.dept}</span>
                       <span className="text-xs text-gray-300 mr-auto font-mono">{emp.oldRoom} ← {emp.newRoom}</span>
@@ -203,7 +246,7 @@ export default function App() {
         )}
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 mt-6 pb-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 mt-6 pb-8">
         {activeTab === 'checklist' && (
           <Checklist phases={PHASES} employees={filteredEmployees} movedSet={movedSet}
             toggleMoved={toggleMoved} markPhaseComplete={markPhaseComplete} unmarkPhase={unmarkPhase}
@@ -224,7 +267,12 @@ export default function App() {
             onSelectEmployee={setSelectedEmployee} departments={DEPARTMENTS} />
         )}
         {activeTab === 'admin' && isAdmin && <AdminPanel />}
+        {activeTab === 'auditlog' && isAdmin && <AuditLog />}
       </main>
+
+      <footer className="text-center py-4 text-[11px] text-gray-300 select-none">
+        v2.0
+      </footer>
 
       {selectedEmployee && (
         <EmployeeModal employee={selectedEmployee} isMoved={movedSet.has(selectedEmployee.id)}
