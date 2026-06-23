@@ -181,8 +181,8 @@ export default function Checklist({
                     </div>
                   </div>
 
-                  {/* Mark all button */}
-                  {status !== 'complete' && (
+                  {/* Mark all button — hidden for viewers */}
+                  {markPhaseComplete && status !== 'complete' && (
                     <span
                       role="button"
                       tabIndex={0}
@@ -289,18 +289,19 @@ export default function Checklist({
                                   : 'hover:bg-gray-50'
                               }`}
                             >
-                              {/* Checkbox */}
+                              {/* Checkbox — hidden for viewers */}
                               <td className="py-3 px-2">
-                                <input
-                                  type="checkbox"
-                                  checked={isMoved}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    toggleMoved(emp.id);
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer accent-green-600"
-                                />
+                                {toggleMoved ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={isMoved}
+                                    onChange={(e) => { e.stopPropagation(); toggleMoved(emp.id); }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer accent-green-600"
+                                  />
+                                ) : (
+                                  <span className={`w-4 h-4 inline-flex items-center justify-center rounded text-[10px] ${isMoved ? 'text-green-500' : 'text-gray-300'}`}>{isMoved ? '✓' : '○'}</span>
+                                )}
                               </td>
 
                               {/* Number */}
