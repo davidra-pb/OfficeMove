@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAllUsers, unblockUser, createUser, updateUserPassword, updateUserRole } from '../auth.js';
+import { logAction, ACTIONS } from '../auditLog.js';
+import { getStoredSession } from '../auth.js';
+
+const getUsername = () => getStoredSession()?.username || 'admin';
 
 export default function AdminPanel() {
   const [users, setUsers] = useState([]);
@@ -25,6 +29,7 @@ export default function AdminPanel() {
 
   const handleUnblock = async (username) => {
     await unblockUser(username);
+    logAction(getUsername(), ACTIONS.UNBLOCK_USER, { target: username });
     showMsg(`${username} שוחרר`);
     loadUsers();
   };
@@ -32,6 +37,7 @@ export default function AdminPanel() {
   const handleRoleToggle = async (username, currentRole) => {
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     await updateUserRole(username, newRole);
+    logAction(getUsername(), ACTIONS.UPDATE_ROLE, { target: username, newRole });
     showMsg(`${username} עודכן ל-${newRole}`);
     loadUsers();
   };
@@ -41,6 +47,7 @@ export default function AdminPanel() {
     if (!newName.trim() || !newPass) return;
     const result = await createUser(newName, newPass, newRole);
     if (result.success) {
+      logAction(getUsername(), ACTIONS.CREATE_USER, { target: newName, role: newRole });
       showMsg(`${newName} נוצר בהצלחה`);
       setNewName(''); setNewPass(''); setNewRole('user'); setShowAdd(false);
       loadUsers();
@@ -52,6 +59,7 @@ export default function AdminPanel() {
   const handlePasswordUpdate = async (username) => {
     if (!editPass) return;
     await updateUserPassword(username, editPass);
+    logAction(getUsername(), ACTIONS.UPDATE_PASSWORD, { target: username });
     showMsg(`סיסמה עודכנה עבור ${username}`);
     setEditingPassword(null); setEditPass('');
   };
@@ -80,7 +88,7 @@ export default function AdminPanel() {
 
       {showAdd && (
         <form onSubmit={handleAddUser} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3 animate-fade-in">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">שם משתמש</label>
               <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
@@ -108,20 +116,21 @@ export default function AdminPanel() {
       )}
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100">
-              <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">משתמש</th>
-              <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">תפקיד</th>
-              <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">סטטוס</th>
-              <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">ניסיונות</th>
-              <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">פעולות</th>
+              <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">משתמש</th>
+              <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">תפקיד</th>
+              <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">סטטוס</th>
+              <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">ניסיונות</th>
+              <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">פעולות</th>
             </tr>
           </thead>
           <tbody>
             {users.map(user => (
               <tr key={user.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                <td className="px-5 py-3 font-medium text-gray-900">{user.username}</td>
+                <td className="px-5 py-3 font-medium text-gray-900 whitespace-nowrap">{user.username}</td>
                 <td className="px-5 py-3">
                   <span className={`text-xs font-medium px-2 py-0.5 rounded ${user.role === 'admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
                     {user.role === 'admin' ? 'מנהל' : 'משתמש'}
@@ -140,7 +149,7 @@ export default function AdminPanel() {
                 </td>
                 <td className="px-5 py-3 text-gray-400 tabular-nums">{user.failedAttempts || 0}/3</td>
                 <td className="px-5 py-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {user.blocked && (
                       <button onClick={() => handleUnblock(user.username)}
                         className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors">
@@ -172,6 +181,7 @@ export default function AdminPanel() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
