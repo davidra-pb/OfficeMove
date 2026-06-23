@@ -141,7 +141,7 @@ export default function FloorMap({
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col md:flex-row md:items-center gap-3 flex-wrap">
+      <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
         <div className="flex gap-1 bg-gray-100 rounded-lg p-1 flex-wrap">
           {FLOOR_PLANS.map(fp => {
             const isActive = activeFloor === fp.id;
@@ -243,7 +243,7 @@ export default function FloorMap({
                         : someMoved ? 'bg-yellow-50/95 border-2 border-yellow-400 shadow-md'
                         : 'bg-white/95 border-2 border-indigo-300 shadow-md'
                   } ${isHighlighted && !editMode ? 'ring-3 ring-indigo-500 ring-offset-1 scale-125' : ''}`}
-                    style={{ minWidth: editMode ? '40px' : occs.length > 2 ? '50px' : '36px' }}>
+                    style={{ minWidth: editMode ? '40px' : occs.length > 2 ? '50px' : '40px' }}>
                     <div className={`text-[8px] font-extrabold text-center leading-none mb-0.5 ${editMode ? 'text-orange-700' : 'text-gray-700'}`}>
                       {roomId}
                       {editMode && <span className="block text-[7px] text-gray-400 font-normal">{coords.x},{coords.y}</span>}
@@ -256,7 +256,7 @@ export default function FloorMap({
                           return (
                             <button key={emp.id} onClick={() => onSelectEmployee(emp)}
                               title={`${emp.first} ${emp.last} — ${emp.dept}`}
-                              className="w-[18px] h-[18px] rounded-full text-[7px] font-bold flex items-center justify-center cursor-pointer transition-transform hover:scale-[1.8] hover:z-30"
+                              className="w-6 h-6 sm:w-[18px] sm:h-[18px] rounded-full text-[7px] font-bold flex items-center justify-center cursor-pointer transition-transform hover:scale-[1.8] hover:z-30"
                               style={{ backgroundColor: isMoved ? '#22c55e' : pc, color: 'white', border: isMoved ? '1.5px solid #16a34a' : '1.5px dashed rgba(255,255,255,0.6)' }}>
                               {isMoved ? '✓' : getInitials(emp)}
                             </button>
