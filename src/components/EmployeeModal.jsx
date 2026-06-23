@@ -39,8 +39,8 @@ export default function EmployeeModal({ employee, isMoved, toggleMoved, onClose 
             </div>
           </div>
 
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 bg-gray-50 rounded-lg p-4 text-center">
+          <div className="flex flex-col sm:flex-row items-center gap-3 mb-5">
+            <div className="w-full sm:flex-1 bg-gray-50 rounded-lg p-4 text-center">
               <div className="text-xs text-gray-400 mb-2">מיקום נוכחי</div>
               <div className="text-xl font-bold text-gray-900 mb-1">{employee.oldRoom}</div>
               <div className="text-xs text-gray-500 space-y-0.5">
@@ -49,7 +49,7 @@ export default function EmployeeModal({ employee, isMoved, toggleMoved, onClose 
               </div>
             </div>
             <span className="text-gray-300 text-lg shrink-0">&larr;</span>
-            <div className="flex-1 bg-gray-50 rounded-lg p-4 text-center">
+            <div className="w-full sm:flex-1 bg-gray-50 rounded-lg p-4 text-center">
               <div className="text-xs text-gray-400 mb-2">מיקום חדש</div>
               <div className="text-xl font-bold text-gray-900 mb-1">{employee.newRoom}</div>
               <div className="text-xs text-gray-500 space-y-0.5">
