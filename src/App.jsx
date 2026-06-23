@@ -65,18 +65,19 @@ export default function App() {
     setActiveTab('checklist');
   }, []);
 
-  // Presence — write on login, heartbeat every 30s, cleanup on logout/unload
+  // Presence — write on login, heartbeat every 30s, update on tab change, cleanup on logout/unload
   useEffect(() => {
     if (!currentUser) return;
     const ref = doc(db, 'presence', currentUser.username);
-    const write = () => setDoc(ref, {
+    const write = (tab) => setDoc(ref, {
       username: currentUser.username,
       role: currentUser.role,
       lastSeen: serverTimestamp(),
       online: true,
+      screen: tab || activeTab,
     });
-    write();
-    const heartbeat = setInterval(write, 30_000);
+    write(activeTab);
+    const heartbeat = setInterval(() => write(activeTab), 30_000);
     const onUnload = () => { deleteDoc(ref).catch(() => {}); };
     window.addEventListener('beforeunload', onUnload);
     return () => {
@@ -84,7 +85,7 @@ export default function App() {
       window.removeEventListener('beforeunload', onUnload);
       deleteDoc(ref).catch(() => {});
     };
-  }, [currentUser]);
+  }, [currentUser, activeTab]);
 
   // Idle timeout — 30 min
   useEffect(() => {
@@ -356,7 +357,7 @@ export default function App() {
       </main>
 
       <footer className="text-center py-4 text-[11px] text-gray-300 select-none">
-        v2.3
+        v2.4
       </footer>
 
       {/* Admin Side Menu */}
@@ -401,18 +402,23 @@ export default function App() {
                   <div className="px-3 py-2 text-xs text-gray-400">אין משתמשים מחוברים</div>
                 ) : (
                   <div className="space-y-1">
-                    {onlineUsers.map(u => (
+                    {onlineUsers.map(u => {
+                      const screenLabels = { home: 'בית', checklist: "צ'קליסט", comparison: 'ישן ↔ חדש', floor: 'מפת קומות', timeline: 'ציר זמן', admin: 'ניהול', auditlog: 'יומן' };
+                      const screenLabel = screenLabels[u.screen] || u.screen || '—';
+                      return (
                       <div key={u.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-green-50 border border-green-100">
                         <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
-                        <span className="text-sm font-medium text-gray-800">{u.username}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded mr-auto ${
-                          u.role === 'admin' ? 'bg-indigo-100 text-indigo-600' :
-                          u.role === 'viewer' ? 'bg-gray-100 text-gray-500' : 'bg-gray-100 text-gray-500'
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-800">{u.username}</div>
+                          <div className="text-[10px] text-gray-400">{screenLabel}</div>
+                        </div>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
+                          u.role === 'admin' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'
                         }`}>
                           {u.role === 'admin' ? 'מנהל' : u.role === 'viewer' ? 'צופה' : 'משתמש'}
                         </span>
                       </div>
-                    ))}
+                    );})}
                   </div>
                 )}
               </div>
