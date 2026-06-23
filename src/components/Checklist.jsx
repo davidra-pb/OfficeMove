@@ -139,7 +139,7 @@ export default function Checklist({
               className="w-full text-right"
             >
               <div
-                className="flex items-center gap-3 px-6 py-5 cursor-pointer select-none transition-colors"
+                className="flex items-center gap-3 px-6 py-5 cursor-pointer select-none transition-colors flex-wrap"
               >
                 {/* Phase name & info */}
                 <div className="flex-1 min-w-0">
@@ -196,7 +196,7 @@ export default function Checklist({
                           markPhaseComplete(phase.id);
                         }
                       }}
-                      className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md px-2 py-1 transition-colors whitespace-nowrap cursor-pointer"
+                      className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md px-2 py-1 transition-colors whitespace-nowrap cursor-pointer min-h-[32px] inline-flex items-center"
                     >
                       סמן הכל
                     </span>
@@ -215,7 +215,7 @@ export default function Checklist({
                           unmarkPhase(phase.id);
                         }
                       }}
-                      className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md px-2 py-1 transition-colors whitespace-nowrap cursor-pointer"
+                      className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md px-2 py-1 transition-colors whitespace-nowrap cursor-pointer min-h-[32px] inline-flex items-center"
                     >
                       בטל הכל
                     </span>
@@ -255,7 +255,8 @@ export default function Checklist({
                 )}
 
                 {/* Employee table */}
-                <div className="px-6 pb-4 overflow-x-auto">
+                <div className="px-6 pb-4">
+                <div className="overflow-x-auto">
                   {phaseEmployees.length === 0 ? (
                     <div className="text-center py-8 text-gray-400 text-sm">
                       אין עובדים תואמים לסינון
@@ -270,7 +271,7 @@ export default function Checklist({
                           <th className="py-2 px-2 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">מחלקה</th>
                           <th className="py-2 px-2 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">מחדר</th>
                           <th className="py-2 px-2 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">לחדר</th>
-                          <th className="py-2 px-2 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">מחליף את</th>
+                          <th className="py-2 px-2 text-right text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">מחליף את</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -282,7 +283,7 @@ export default function Checklist({
                             <tr
                               key={emp.id}
                               onClick={() => onSelectEmployee(emp)}
-                              className={`border-b border-gray-100 cursor-pointer transition-colors ${
+                              className={`border-b border-gray-100 cursor-pointer transition-colors min-h-[44px] ${
                                 isMoved
                                   ? 'bg-gray-50 opacity-50'
                                   : 'hover:bg-gray-50'
@@ -335,17 +336,17 @@ export default function Checklist({
                               {/* Old Room */}
                               <td className={`py-3 px-2 text-xs ${isMoved ? 'text-gray-400' : 'text-gray-600'}`}>
                                 <span className="font-medium">{emp.oldRoom}</span>
-                                <span className="text-gray-400 mr-1">({getBldAbbr(emp.oldBld)})</span>
+                                <span className="text-gray-400 mr-1 hidden sm:inline">({getBldAbbr(emp.oldBld)})</span>
                               </td>
 
                               {/* New Room */}
                               <td className={`py-3 px-2 text-xs ${isMoved ? 'text-gray-400' : 'text-gray-700 font-semibold'}`}>
                                 <span>{emp.newRoom}</span>
-                                <span className="text-gray-400 mr-1 font-normal">({getBldAbbr(emp.newBld)})</span>
+                                <span className="text-gray-400 mr-1 font-normal hidden sm:inline">({getBldAbbr(emp.newBld)})</span>
                               </td>
 
                               {/* Replaces */}
-                              <td className={`py-3 px-2 text-xs max-w-[180px] truncate ${isMoved ? 'text-gray-400' : 'text-gray-500'}`}>
+                              <td className={`py-3 px-2 text-xs max-w-[180px] truncate hidden sm:table-cell ${isMoved ? 'text-gray-400' : 'text-gray-500'}`}>
                                 {emp.replaces || '—'}
                               </td>
                             </tr>
@@ -354,6 +355,7 @@ export default function Checklist({
                       </tbody>
                     </table>
                   )}
+                </div>
                 </div>
               </div>
             )}
