@@ -3,7 +3,7 @@ import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove } from 'fir
 import { db } from './firebase.js';
 import { PHASES, EMPLOYEES, DEPARTMENTS } from './data/moveData.js';
 import { getStoredSession, logout, seedUsersIfNeeded } from './auth.js';
-import { logAction, ACTIONS } from './auditLog.js';
+import { logAction, clearAuditLog, ACTIONS } from './auditLog.js';
 import LoginScreen from './components/LoginScreen';
 import StatsBar from './components/StatsBar';
 import FloorMap from './components/FloorMap';
@@ -114,6 +114,21 @@ export default function App() {
     const phaseEmpIds = EMPLOYEES.filter((e) => e.phase === phaseId).map((e) => e.id);
     updateDoc(PROGRESS_REF(), { movedIds: arrayRemove(...phaseEmpIds) });
     logAction(currentUserRef.current?.username, ACTIONS.UNMARK_PHASE, { phase: phase?.name || phaseId });
+  }, []);
+
+  const [resetting, setResetting] = useState(false);
+  const resetAll = useCallback(async () => {
+    if (!window.confirm('האם לאפס את כל הנתונים? פעולה זו תמחק את כל הסימונים ויומן הפעולות.')) return;
+    setResetting(true);
+    try {
+      await setDoc(doc(db, 'officeMove', 'progress'), { movedIds: [] });
+      await clearAuditLog();
+      await logAction(currentUserRef.current?.username, 'איפוס מערכת — Start Moving');
+      setSideMenuOpen(false);
+      setActiveTab('home');
+    } finally {
+      setResetting(false);
+    }
   }, []);
 
   const filteredEmployees = useMemo(() => {
@@ -297,7 +312,7 @@ export default function App() {
       </main>
 
       <footer className="text-center py-4 text-[11px] text-gray-300 select-none">
-        v2.1
+        v2.2
       </footer>
 
       {/* Admin Side Menu */}
@@ -361,9 +376,14 @@ export default function App() {
             </div>
 
             {/* Drawer footer */}
-            <div className="border-t border-gray-100 p-4 shrink-0">
+            <div className="border-t border-gray-100 p-4 shrink-0 space-y-2">
+              <button onClick={resetAll} disabled={resetting}
+                className="w-full px-3 py-2.5 rounded-lg text-sm font-semibold bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-50 transition-colors text-center">
+                {resetting ? 'מאפס...' : '🚀 Start Moving'}
+              </button>
+              <p className="text-[10px] text-gray-400 text-center">מחיקת כל הסימונים ויומן הפעולות</p>
               <button onClick={() => { setSideMenuOpen(false); handleLogout(); }}
-                className="w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors text-center">
+                className="w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors text-center">
                 התנתק
               </button>
             </div>
