@@ -130,59 +130,45 @@ function PhaseTimeline({ phases, movedSet }) {
   );
 }
 
+function EmpCard({ emp, isMoved, onClick }) {
+  const Tag = onClick ? 'button' : 'div';
+  return (
+    <Tag onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-colors ${
+        isMoved ? 'opacity-50' : onClick ? 'hover:bg-gray-50 cursor-pointer' : ''
+      }`}>
+      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
+      <div className="flex-1 min-w-0">
+        <div className={`text-sm font-medium text-gray-900 truncate ${isMoved ? 'line-through text-gray-400' : ''}`}>
+          {emp.first} {emp.last}
+        </div>
+        <div className="text-xs text-gray-400">{emp.dept}</div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0 text-xs font-mono">
+        <span className="text-amber-600">{emp.oldRoom}</span>
+        <span className="text-gray-300">←</span>
+        <span className="text-sky-600">{emp.newRoom}</span>
+      </div>
+      <span className={`text-xs font-medium shrink-0 ${isMoved ? 'text-green-500' : 'text-gray-300'}`}>✓</span>
+    </Tag>
+  );
+}
+
 function WavePhaseView({ phase, employees, movedSet, toggleMoved }) {
   const phaseEmps = employees.filter(e => e.phase === phase.id);
   const pending = phaseEmps.filter(e => !movedSet.has(e.id));
   const done = phaseEmps.filter(e => movedSet.has(e.id));
 
   return (
-    <div className="space-y-3">
-      <div className="text-sm font-medium text-gray-500">
-        {phaseEmps.length} עובדים — {done.length} הועברו, {pending.length} ממתינים
-      </div>
-      {pending.length > 0 && (
-        <div>
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">ממתין למעבר</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {pending.map(emp => (
-              <button key={emp.id} onClick={toggleMoved ? () => toggleMoved(emp.id) : undefined}
-                className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3 text-right hover:border-gray-300 hover:shadow-sm transition-all active:scale-95">
-                <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900 text-sm">{emp.first} {emp.last}</div>
-                  <div className="text-xs text-gray-500">{emp.dept}</div>
-                </div>
-                <div className="text-left shrink-0">
-                  <div className="text-xs text-amber-600 font-mono font-semibold">{emp.oldRoom}</div>
-                  <div className="text-xs text-gray-400">← {emp.newRoom}</div>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-gray-100 border-2 border-gray-300 flex items-center justify-center shrink-0">
-                  <span className="text-gray-400 text-xs">✓</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {done.length > 0 && (
-        <div>
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">הועברו</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            {done.map(emp => (
-              <button key={emp.id} onClick={toggleMoved ? () => toggleMoved(emp.id) : undefined}
-                className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 text-right hover:bg-green-100 transition-all">
-                <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-500 text-sm line-through">{emp.first} {emp.last}</div>
-                </div>
-                <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                  <span className="text-white text-xs font-bold">✓</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="divide-y divide-gray-100">
+      {pending.map(emp => (
+        <EmpCard key={emp.id} emp={emp} isMoved={false}
+          onClick={toggleMoved ? () => toggleMoved(emp.id) : undefined} />
+      ))}
+      {done.map(emp => (
+        <EmpCard key={emp.id} emp={emp} isMoved={true}
+          onClick={toggleMoved ? () => toggleMoved(emp.id) : undefined} />
+      ))}
     </div>
   );
 }
@@ -240,50 +226,35 @@ function computeSCCWaves(phaseId, movedSet) {
   return waves;
 }
 
-function EmpRow({ emp, color, isMoved, onClick, size = 'normal' }) {
-  const isSmall = size === 'small';
-  const cls = `w-full flex items-center gap-3 rounded-xl text-right ${onClick ? 'transition-all active:scale-95 cursor-pointer' : 'cursor-default'} ${
-    isMoved ? 'bg-green-50 border border-green-200 opacity-60'
-    : isSmall ? 'bg-white border border-gray-200 hover:border-gray-300 px-3 py-2'
-    : 'bg-white border-2 hover:shadow-md px-4 py-3'
-  }`;
-  const style = !isMoved && !isSmall ? { borderColor: color + '60' } : undefined;
-  const inner = (
-    <>
-      <span className={`rounded-full shrink-0 ${isSmall ? 'w-2.5 h-2.5' : 'w-3 h-3'}`}
+// Unified row used in SCC wave views — consistent with app's design language
+function EmpRow({ emp, isMoved, onClick }) {
+  const Tag = onClick ? 'button' : 'div';
+  return (
+    <Tag onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-colors ${
+        isMoved ? 'opacity-40' : onClick ? 'hover:bg-gray-50 cursor-pointer' : ''
+      }`}>
+      <span className="w-2.5 h-2.5 rounded-full shrink-0"
         style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
       <div className="flex-1 min-w-0">
-        <div className={`font-semibold truncate ${isSmall ? 'text-sm text-gray-600' : 'text-base text-gray-900'} ${isMoved ? 'line-through' : ''}`}>
+        <div className={`text-sm font-medium truncate ${isMoved ? 'line-through text-gray-400' : 'text-gray-900'}`}>
           {emp.first} {emp.last}
         </div>
-        {!isSmall && (
-          <div className="text-xs text-gray-400 truncate">
-            {emp.dept}
-            {emp.replaces && emp.replaces !== 'חדר ריק' && emp.replaces !== 'חדר חדש / ריק' && (
-              <span className="text-gray-300"> · מחליף: <span className="text-gray-400">{emp.replaces}</span></span>
-            )}
-          </div>
-        )}
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <div className={`text-center ${isSmall ? '' : 'bg-amber-50 rounded-lg px-2 py-1'}`}>
-          <div className={`font-bold font-mono ${isSmall ? 'text-xs text-amber-600' : 'text-sm text-amber-700'}`}>{emp.oldRoom}</div>
-        </div>
-        <span className="text-gray-300 text-sm">←</span>
-        <div className={`text-center ${isSmall ? '' : 'bg-sky-50 rounded-lg px-2 py-1'}`}>
-          <div className={`font-bold font-mono ${isSmall ? 'text-xs text-sky-600' : 'text-sm text-sky-700'}`}>{emp.newRoom}</div>
-        </div>
-        <div className={`rounded-full flex items-center justify-center shrink-0 ${
-          isMoved ? 'bg-green-500 w-6 h-6' : isSmall ? 'w-6 h-6 border-2 border-gray-300 bg-gray-50' : 'w-8 h-8 border-2 border-gray-300 bg-gray-50'
-        }`}>
-          <span className={`font-bold ${isMoved ? 'text-white text-[10px]' : 'text-gray-400 text-[10px]'}`}>✓</span>
+        <div className="text-xs text-gray-400 truncate">
+          {emp.dept}
+          {emp.replaces && emp.replaces !== 'חדר ריק' && emp.replaces !== 'חדר חדש / ריק' && (
+            <span className="text-gray-300"> · מחליף: {emp.replaces}</span>
+          )}
         </div>
       </div>
-    </>
+      <div className="flex items-center gap-1.5 shrink-0 text-xs font-mono">
+        <span className="text-amber-600">{emp.oldRoom}</span>
+        <span className="text-gray-300">←</span>
+        <span className="text-sky-600">{emp.newRoom}</span>
+      </div>
+      <span className={`text-xs shrink-0 ${isMoved ? 'text-green-500' : 'text-gray-300'}`}>✓</span>
+    </Tag>
   );
-  return onClick
-    ? <button onClick={onClick} className={cls} style={style}>{inner}</button>
-    : <div className={cls} style={style}>{inner}</div>;
 }
 
 function SCCPhaseView({ phase, movedSet, toggleMoved }) {
@@ -335,165 +306,84 @@ function SCCPhaseView({ phase, movedSet, toggleMoved }) {
       </div>
 
       {isComplete ? (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
-          <div className="text-4xl mb-2">✅</div>
-          <div className="text-lg font-bold text-green-700">הסיבוב הושלם!</div>
-          <div className="text-sm text-green-600 mt-1">כל {total} העובדים הועברו</div>
+        <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-4 text-center">
+          <div className="text-base font-semibold text-green-700 mb-0.5">הסיבוב הושלם</div>
+          <div className="text-sm text-green-600">כל {total} העובדים הועברו</div>
         </div>
       ) : (
         <div className="space-y-2">
 
-          {/* Recently completed waves — above the active, unchecking allowed */}
+          {/* Recently completed waves */}
           {completedWaves.map((wave, i) => {
             const waveIdx = activeWaveIdx - (completedWaves.length - 1 - i);
             return (
               <div key={`done-${waveIdx}`}
-                className="rounded-xl overflow-hidden border border-green-200 bg-green-50/60 opacity-70 hover:opacity-100 transition-opacity">
-                <div className="px-4 py-1.5 flex items-center justify-between border-b border-green-200/60">
+                className="bg-white border border-gray-200 rounded-xl overflow-hidden opacity-60 hover:opacity-100 transition-opacity"
+                style={{ borderTop: `2px solid #22c55e` }}>
+                <div className="px-4 py-2 flex items-center justify-between border-b border-gray-100">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-green-700">✓ הושלם — גל {waveIdx}</span>
-                    <span className="bg-green-200 text-green-700 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">{wave.length} עובדים</span>
+                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-xs font-medium text-gray-600">הושלם — גל {waveIdx}</span>
+                    <span className="text-xs text-gray-400">{wave.length} עובדים</span>
                   </div>
-                  <span className="text-[10px] text-green-500">לחץ לביטול סימון</span>
+                  <span className="text-[10px] text-gray-400">לחץ לביטול</span>
                 </div>
-                <div className="px-3 py-2 flex flex-wrap gap-1.5">
+                <div className="divide-y divide-gray-50">
                   {wave.map(id => {
                     const emp = empById[id];
                     if (!emp) return null;
-                    return (
-                      <button key={id} onClick={() => toggleMoved(id)}
-                        className="flex items-center gap-1.5 bg-white border border-green-200 rounded-lg px-2.5 py-1.5 hover:bg-red-50 hover:border-red-200 transition-colors group">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
-                        <span className="text-xs font-medium text-gray-500 line-through group-hover:no-underline group-hover:text-red-600">
-                          {emp.first} {emp.last}
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-mono group-hover:text-red-400">{emp.oldRoom}</span>
-                        <span className="text-green-500 text-[10px] group-hover:text-red-400">✓</span>
-                      </button>
-                    );
+                    return <EmpRow key={id} emp={emp} isMoved={true} onClick={toggleMoved ? () => toggleMoved(id) : undefined} />;
                   })}
                 </div>
               </div>
             );
           })}
 
+          {/* Upcoming waves */}
           {activeWaveIdx >= 0 && allWaves.slice(activeWaveIdx, activeWaveIdx + SHOW_AHEAD).map((wave, offset) => {
-            const cfg = waveConfig[offset] || waveConfig[waveConfig.length - 1];
             const waveIdx = activeWaveIdx + offset + 1;
             const pendingInWave = wave.filter(id => !movedSet.has(id));
             if (pendingInWave.length === 0) return null;
 
-            /* ── PILL style (waves 4 & 5) ── */
-            if (cfg.size === 'pill') {
-              return (
-                <div key={waveIdx} className="rounded-xl border border-gray-100 overflow-hidden"
-                  style={{ opacity: cfg.opacity }}>
-                  <div className="px-3 py-1.5 bg-gray-50 flex items-center justify-between">
-                    <span className="text-[11px] font-medium text-gray-400">{cfg.label} — גל {waveIdx}</span>
-                    <span className="text-[11px] text-gray-400">{pendingInWave.length} עובדים</span>
-                  </div>
-                  <div className="bg-white px-3 py-2 flex flex-wrap gap-1.5">
-                    {pendingInWave.map(id => {
-                      const emp = empById[id];
-                      if (!emp) return null;
-                      return (
-                        <button key={id} onClick={() => toggleMoved(id)}
-                          className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-md px-2 py-1 hover:bg-gray-100 transition-colors">
-                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
-                          <span className="text-[11px] font-medium text-gray-600">{emp.first} {emp.last}</span>
-                          <span className="text-[10px] text-gray-400 font-mono mr-1">{emp.oldRoom}→{emp.newRoom}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            }
+            const isActive = offset === 0;
+            const opacityStyle = { opacity: [1, 0.9, 0.7, 0.5, 0.35][offset] ?? 0.35 };
+            const waveLabels = ['מתפנים עכשיו', 'להיערך', 'בתור', 'עמדו מוכן', 'קרוב'];
+            const label = waveLabels[offset] || 'בתור';
 
-            /* ── SMALL style (wave 3) ── */
-            if (cfg.size === 'small') {
-              return (
-                <div key={waveIdx} className="rounded-xl overflow-hidden border border-gray-150"
-                  style={{ opacity: cfg.opacity }}>
-                  <div className="px-4 py-2 bg-gray-50 flex items-center justify-between border-b border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-gray-500">{cfg.label}</span>
-                      <span className="bg-gray-200 text-gray-500 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">{pendingInWave.length}</span>
-                    </div>
-                    <span className="text-[11px] text-gray-400">גל {waveIdx}</span>
-                  </div>
-                  <div className="bg-white p-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    {pendingInWave.map(id => {
-                      const emp = empById[id];
-                      if (!emp) return null;
-                      return (
-                        <button key={id} onClick={() => toggleMoved(id)}
-                          className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg px-3 py-1.5 hover:bg-gray-100 text-right transition-colors">
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
-                          <span className="text-xs font-medium text-gray-700 flex-1 truncate">{emp.first} {emp.last}</span>
-                          <span className="text-[10px] text-amber-600 font-mono">{emp.oldRoom}</span>
-                          <span className="text-gray-300 text-[10px]">←</span>
-                          <span className="text-[10px] text-sky-600 font-mono">{emp.newRoom}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            }
-
-            /* ── MEDIUM style (wave 2) ── */
-            if (cfg.size === 'medium') {
-              return (
-                <div key={waveIdx} className="rounded-xl overflow-hidden border border-gray-200"
-                  style={{ opacity: cfg.opacity }}>
-                  <div className="px-4 py-2 bg-gray-50 flex items-center justify-between border-b border-gray-200">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-600">{cfg.label}</span>
-                      <span className="bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full">{pendingInWave.length} עובדים</span>
-                    </div>
-                    <span className="text-xs text-gray-400">גל {waveIdx}</span>
-                  </div>
-                  <div className="bg-white p-3 space-y-1.5">
-                    {pendingInWave.map(id => {
-                      const emp = empById[id];
-                      if (!emp) return null;
-                      return <EmpRow key={id} emp={emp} color={phase.color} isMoved={false} onClick={toggleMoved ? () => toggleMoved(id) : undefined} size="small" />;
-                    })}
-                  </div>
-                </div>
-              );
-            }
-
-            /* ── LARGE style (wave 1 — active) ── */
             return (
-              <div key={waveIdx} className="rounded-2xl overflow-hidden border-2 shadow-lg"
-                style={{ borderColor: phase.color }}>
-                <div className="px-4 py-2.5 flex items-center justify-between" style={{ backgroundColor: phase.color }}>
+              <div key={waveIdx}
+                className="bg-white border border-gray-200 rounded-xl overflow-hidden"
+                style={{ borderTop: isActive ? `2px solid ${phase.color}` : undefined, ...opacityStyle }}>
+                {/* Wave header — same style as Checklist phase header */}
+                <div className="px-4 py-2.5 flex items-center justify-between border-b border-gray-100">
                   <div className="flex items-center gap-2">
-                    <span className="text-white font-bold text-sm">{cfg.label}</span>
-                    <span className="bg-white/20 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                      {pendingInWave.length} עובדים
-                    </span>
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: isActive ? phase.color : '#d1d5db' }} />
+                    <span className={`text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-500'}`}>{label}</span>
+                    <span className="text-xs text-gray-400">{pendingInWave.length} עובדים</span>
                   </div>
-                  <span className="text-white/70 text-xs">גל {waveIdx} מתוך {allWaves.length}</span>
+                  <span className="text-xs text-gray-400">גל {waveIdx} / {allWaves.length}</span>
                 </div>
-                <div className="bg-white p-3 space-y-2">
+
+                {/* Employee rows */}
+                <div className="divide-y divide-gray-50">
                   {wave.map(id => {
                     const emp = empById[id];
                     if (!emp) return null;
                     const isMoved = movedSet.has(id);
-                    return <EmpRow key={id} emp={emp} color={phase.color} isMoved={isMoved} onClick={toggleMoved ? () => toggleMoved(id) : undefined} />;
+                    return <EmpRow key={id} emp={emp} isMoved={isMoved} onClick={toggleMoved ? () => toggleMoved(id) : undefined} />;
                   })}
-                  {pendingInWave.length > 0 && (
-                    <button
-                      onClick={() => toggleMoved && pendingInWave.forEach(id => toggleMoved(id))}
-                      className="w-full mt-1 py-3 rounded-xl text-white text-sm font-bold active:scale-95 transition-all"
-                      style={{ backgroundColor: phase.color }}>
-                      ✓ סמן כולם והמשך לגל {waveIdx + 1}
-                    </button>
-                  )}
                 </div>
+
+                {/* Mark all button — ghost style matching Checklist */}
+                {isActive && pendingInWave.length > 0 && toggleMoved && (
+                  <div className="px-4 py-2.5 border-t border-gray-100">
+                    <button
+                      onClick={() => pendingInWave.forEach(id => toggleMoved(id))}
+                      className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md px-3 py-1.5 transition-colors w-full text-center">
+                      סמן כולם — גל {waveIdx}
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -550,37 +440,53 @@ export default function HomePage({ movedSet, toggleMoved, markPhaseComplete }) {
 
       {/* All done */}
       {isAllDone && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-10 text-center">
-          <div className="text-5xl mb-3">🎉</div>
-          <div className="text-2xl font-bold text-green-800">המעבר הושלם!</div>
-          <div className="text-green-600 mt-1">כל 113 העובדים הועברו בהצלחה</div>
+        <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-6 text-center">
+          <div className="text-base font-semibold text-green-800 mb-1">המעבר הושלם</div>
+          <div className="text-sm text-green-600">כל {totalEmps} העובדים הועברו בהצלחה</div>
         </div>
       )}
 
-      {/* Active phase */}
+      {/* Active phase — matches Checklist card style */}
       {!isAllDone && activePhase && (
-        <div className="bg-white border-2 rounded-2xl overflow-hidden" style={{ borderColor: activePhase.color }}>
-          {/* Header */}
-          <div className="px-5 py-3 flex items-center justify-between" style={{ backgroundColor: activePhase.colorLight || '#f9fafb' }}>
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden"
+          style={{ borderTop: `2px solid ${activePhase.color}` }}>
+          {/* Header — same pattern as Checklist phase header */}
+          <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
             <div>
-              <div className="text-xs font-medium text-gray-400">
-                {activePhase.type === 'scc' ? '🔄 סיבוב מסונכרן' : '📦 גל העברה'} · יום {activePhase.day === 1 ? "א' 28.06" : "ב' 29.06"}
+              <div className="flex items-center gap-2">
+                <span className="text-base font-semibold text-gray-900">{activePhase.name}</span>
+                {activePhase.type === 'scc' && (
+                  <span className="text-xs font-medium text-purple-600 bg-purple-50 rounded px-2 py-0.5">סיבוב מסונכרן</span>
+                )}
+                <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  בתהליך
+                </span>
               </div>
-              <div className="text-base font-bold mt-0.5" style={{ color: activePhase.color }}>{activePhase.name}</div>
+              <div className="text-xs text-gray-400 mt-0.5">
+                יום {activePhase.day === 1 ? "א' 28.06" : "ב' 29.06"} · {activePhase.time}
+              </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-500">{activePhase.time}</span>
+              <div className="text-left min-w-[80px]">
+                <div className="text-sm font-semibold text-gray-700 tabular-nums">
+                  {activePhaseDone}/{activePhaseEmps.length} <span className="font-normal text-gray-400 text-xs">הועברו</span>
+                </div>
+                <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${activePhaseEmps.length ? (activePhaseDone / activePhaseEmps.length) * 100 : 0}%`, backgroundColor: activePhase.color }} />
+                </div>
+              </div>
               {activePhase.type === 'wave' && activePhaseDone < activePhaseEmps.length && markPhaseComplete && (
-                <button onClick={() => markPhaseComplete(activePhase.id)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors hover:opacity-90"
-                  style={{ backgroundColor: activePhase.color }}>
+                <span role="button" onClick={() => markPhaseComplete(activePhase.id)}
+                  className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md px-2 py-1 transition-colors cursor-pointer">
                   סמן הכל
-                </button>
+                </span>
               )}
             </div>
           </div>
 
-          <div className="p-4">
+          <div>
             {activePhase.type === 'scc' ? (
               <SCCPhaseView phase={activePhase} movedSet={movedSet} toggleMoved={toggleMoved} />
             ) : (
