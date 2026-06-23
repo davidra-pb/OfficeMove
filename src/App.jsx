@@ -297,7 +297,7 @@ export default function App() {
       </main>
 
       <footer className="text-center py-4 text-[11px] text-gray-300 select-none">
-        v2.0
+        v2.1
       </footer>
 
       {/* Admin Side Menu */}
