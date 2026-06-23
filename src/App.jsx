@@ -12,6 +12,7 @@ import Checklist from './components/Checklist';
 import Comparison from './components/Comparison';
 import AdminPanel from './components/AdminPanel';
 import AuditLog from './components/AuditLog';
+import HomePage from './components/HomePage';
 import EmployeeModal from './components/EmployeeModal';
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
@@ -21,7 +22,7 @@ const PROGRESS_REF = () => doc(db, 'officeMove', 'progress');
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => getStoredSession());
   const [movedSet, setMovedSet] = useState(new Set());
-  const [activeTab, setActiveTab] = useState('checklist');
+  const [activeTab, setActiveTab] = useState('home');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [dayFilter, setDayFilter] = useState(null);
@@ -77,6 +78,7 @@ export default function App() {
   }, [currentUser, handleLogout]);
 
   const isAdmin = currentUser?.role === 'admin';
+  const canEdit = currentUser?.role !== 'viewer';
 
   const toggleMoved = useCallback((empId) => {
     const ref = PROGRESS_REF();
@@ -150,6 +152,7 @@ export default function App() {
   }, []);
 
   const tabs = [
+    { id: 'home', label: 'בית 🏠' },
     { id: 'checklist', label: "צ'קליסט" },
     { id: 'comparison', label: 'ישן ↔ חדש' },
     { id: 'floor', label: 'מפת קומות' },
@@ -178,6 +181,7 @@ export default function App() {
             <span className="text-sm text-gray-300">
               {currentUser.username}
               {isAdmin && <span className="text-xs text-indigo-400 mr-1">(מנהל)</span>}
+              {!canEdit && <span className="text-xs text-gray-400 mr-1">(צופה)</span>}
             </span>
             <button
               onClick={handleLogout}
@@ -205,7 +209,7 @@ export default function App() {
           ))}
         </div>
 
-        {activeTab !== 'admin' && (
+        {activeTab !== 'admin' && activeTab !== 'auditlog' && activeTab !== 'home' && (
           <>
             <div className="flex gap-2">
               {dayButtons.map((btn) => (
@@ -247,19 +251,34 @@ export default function App() {
       </div>
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 mt-6 pb-8">
+        {!canEdit && (
+          <div className="mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-700">
+            <span>👁️</span>
+            <span>מצב צפייה בלבד — לא ניתן לבצע שינויים</span>
+          </div>
+        )}
+        {activeTab === 'home' && (
+          <HomePage movedSet={movedSet}
+            toggleMoved={canEdit ? toggleMoved : undefined}
+            markPhaseComplete={canEdit ? markPhaseComplete : undefined} />
+        )}
         {activeTab === 'checklist' && (
           <Checklist phases={PHASES} employees={filteredEmployees} movedSet={movedSet}
-            toggleMoved={toggleMoved} markPhaseComplete={markPhaseComplete} unmarkPhase={unmarkPhase}
+            toggleMoved={canEdit ? toggleMoved : undefined}
+            markPhaseComplete={canEdit ? markPhaseComplete : undefined}
+            unmarkPhase={canEdit ? unmarkPhase : undefined}
             getPhaseStatus={getPhaseStatus} dayFilter={dayFilter}
             onSelectEmployee={setSelectedEmployee} departments={DEPARTMENTS} />
         )}
         {activeTab === 'comparison' && (
-          <Comparison movedSet={movedSet} onSelectEmployee={setSelectedEmployee} toggleMoved={toggleMoved}
+          <Comparison movedSet={movedSet} onSelectEmployee={setSelectedEmployee}
+            toggleMoved={canEdit ? toggleMoved : undefined}
             searchQuery={searchQuery} compareEmployee={compareEmployee} />
         )}
         {activeTab === 'floor' && (
-          <FloorMap employees={filteredEmployees} movedSet={movedSet} toggleMoved={toggleMoved}
-            onSelectEmployee={setSelectedEmployee} departments={DEPARTMENTS} isAdmin={isAdmin} />
+          <FloorMap employees={filteredEmployees} movedSet={movedSet}
+            toggleMoved={canEdit ? toggleMoved : undefined}
+            onSelectEmployee={setSelectedEmployee} departments={DEPARTMENTS} isAdmin={isAdmin && canEdit} />
         )}
         {activeTab === 'timeline' && (
           <Timeline phases={PHASES} employees={filteredEmployees} movedSet={movedSet}
@@ -276,7 +295,8 @@ export default function App() {
 
       {selectedEmployee && (
         <EmployeeModal employee={selectedEmployee} isMoved={movedSet.has(selectedEmployee.id)}
-          toggleMoved={toggleMoved} onClose={() => setSelectedEmployee(null)} departments={DEPARTMENTS} />
+          toggleMoved={canEdit ? toggleMoved : undefined}
+          onClose={() => setSelectedEmployee(null)} departments={DEPARTMENTS} />
       )}
     </div>
   );
