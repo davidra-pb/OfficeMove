@@ -103,6 +103,7 @@ export default function AdminPanel() {
               <label className="block text-xs font-medium text-gray-500 mb-1">תפקיד</label>
               <select value={newRole} onChange={(e) => setNewRole(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300">
+                <option value="viewer">צופה (קריאה בלבד)</option>
                 <option value="user">משתמש</option>
                 <option value="admin">מנהל</option>
               </select>
@@ -133,7 +134,7 @@ export default function AdminPanel() {
                 <td className="px-5 py-3 font-medium text-gray-900 whitespace-nowrap">{user.username}</td>
                 <td className="px-5 py-3">
                   <span className={`text-xs font-medium px-2 py-0.5 rounded ${user.role === 'admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
-                    {user.role === 'admin' ? 'מנהל' : 'משתמש'}
+                    {user.role === 'admin' ? 'מנהל' : user.role === 'viewer' ? 'צופה' : 'משתמש'}
                   </span>
                 </td>
                 <td className="px-5 py-3">
