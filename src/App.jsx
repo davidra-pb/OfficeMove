@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, collection, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase.js';
 import { PHASES, EMPLOYEES, DEPARTMENTS } from './data/moveData.js';
 import { getStoredSession, logout, seedUsersIfNeeded } from './auth.js';
@@ -56,10 +56,35 @@ export default function App() {
     if (user) {
       logAction(user.username, reason === 'idle' ? ACTIONS.IDLE_LOGOUT : ACTIONS.LOGOUT);
     }
+    // Remove presence
+    if (currentUserRef.current) {
+      deleteDoc(doc(db, 'presence', currentUserRef.current.username)).catch(() => {});
+    }
     logout();
     setCurrentUser(null);
     setActiveTab('checklist');
   }, []);
+
+  // Presence — write on login, heartbeat every 30s, cleanup on logout/unload
+  useEffect(() => {
+    if (!currentUser) return;
+    const ref = doc(db, 'presence', currentUser.username);
+    const write = () => setDoc(ref, {
+      username: currentUser.username,
+      role: currentUser.role,
+      lastSeen: serverTimestamp(),
+      online: true,
+    });
+    write();
+    const heartbeat = setInterval(write, 30_000);
+    const onUnload = () => { deleteDoc(ref).catch(() => {}); };
+    window.addEventListener('beforeunload', onUnload);
+    return () => {
+      clearInterval(heartbeat);
+      window.removeEventListener('beforeunload', onUnload);
+      deleteDoc(ref).catch(() => {});
+    };
+  }, [currentUser]);
 
   // Idle timeout — 30 min
   useEffect(() => {
@@ -117,6 +142,25 @@ export default function App() {
   }, []);
 
   const [resetting, setResetting] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+
+  // Real-time presence listener (admin only)
+  useEffect(() => {
+    if (!isAdmin) return;
+    const unsub = onSnapshot(collection(db, 'presence'), snap => {
+      const now = Date.now();
+      const users = snap.docs
+        .map(d => ({ ...d.data(), id: d.id }))
+        .filter(u => {
+          // Consider online if lastSeen within 2 minutes
+          const ts = u.lastSeen?.toDate?.()?.getTime?.();
+          return ts && (now - ts) < 120_000;
+        })
+        .sort((a, b) => (a.username > b.username ? 1 : -1));
+      setOnlineUsers(users);
+    });
+    return unsub;
+  }, [isAdmin]);
   const resetAll = useCallback(async () => {
     if (!window.confirm('האם לאפס את כל הנתונים? פעולה זו תמחק את כל הסימונים ויומן הפעולות.')) return;
     setResetting(true);
@@ -312,7 +356,7 @@ export default function App() {
       </main>
 
       <footer className="text-center py-4 text-[11px] text-gray-300 select-none">
-        v2.2
+        v2.3
       </footer>
 
       {/* Admin Side Menu */}
@@ -343,6 +387,37 @@ export default function App() {
 
             {/* Drawer nav sections */}
             <div className="flex-1 overflow-y-auto p-4 space-y-1">
+
+              {/* Online users — real-time */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between px-2 mb-2">
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">מחוברים כעת</div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-[10px] text-gray-400">{onlineUsers.length}</span>
+                  </div>
+                </div>
+                {onlineUsers.length === 0 ? (
+                  <div className="px-3 py-2 text-xs text-gray-400">אין משתמשים מחוברים</div>
+                ) : (
+                  <div className="space-y-1">
+                    {onlineUsers.map(u => (
+                      <div key={u.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-green-50 border border-green-100">
+                        <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
+                        <span className="text-sm font-medium text-gray-800">{u.username}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded mr-auto ${
+                          u.role === 'admin' ? 'bg-indigo-100 text-indigo-600' :
+                          u.role === 'viewer' ? 'bg-gray-100 text-gray-500' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {u.role === 'admin' ? 'מנהל' : u.role === 'viewer' ? 'צופה' : 'משתמש'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-gray-100 mb-3" />
               <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-2 mb-2">ניהול</div>
               {[
                 { id: 'admin', label: 'משתמשים', desc: 'הוספה, עריכה, חסימה' },
