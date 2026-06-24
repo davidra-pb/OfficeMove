@@ -305,25 +305,32 @@ function FloorPanel({
                     <div className={`font-extrabold text-center leading-none mb-0.5 ${isHighlighted ? 'text-[10px] text-gray-900' : 'text-[8px] text-gray-600'}`}>{roomId}</div>
                     {occs.length > 0 && (
                       <div className="flex flex-wrap gap-px justify-center">
-                        {occs.map(emp => {
+                        {/* Render non-selected first, selected last so they appear on top */}
+                        {[...occs].sort((a, b) => {
+                          const aS = selectedEmpIds.has(a.id) ? 1 : 0;
+                          const bS = selectedEmpIds.has(b.id) ? 1 : 0;
+                          return aS - bS;
+                        }).map(emp => {
                           const isEmpSelected = selectedEmpIds.has(emp.id);
                           const pc = phaseColorMap[emp.phase] || '#6b7280';
                           const isMoved = movedSet.has(emp.id);
                           return (
-                            <div key={emp.id} className={`flex items-center gap-1 ${isEmpSelected ? 'z-30' : ''}`}>
+                            <div key={emp.id} className="flex items-center gap-1"
+                              style={{ position: 'relative', zIndex: isEmpSelected ? 50 : 'auto' }}>
                             <button onClick={(e) => { e.stopPropagation(); onClickEmployee(emp); }}
                               title={`${emp.first} ${emp.last} — ${emp.dept}`}
                               className={`rounded-full font-bold flex items-center justify-center transition-all ${
-                                isEmpSelected ? 'w-[24px] h-[24px] text-[9px] scale-110 ring-2 ring-white shadow-lg' : 'w-[18px] h-[18px] text-[7px] hover:scale-[1.6] hover:z-20'}`}
+                                isEmpSelected ? 'w-[28px] h-[28px] text-[10px] ring-4 ring-white shadow-2xl' : 'w-[18px] h-[18px] text-[7px] hover:scale-[1.6]'}`}
                               style={{
                                 backgroundColor: isMoved ? '#22c55e' : pc, color: 'white',
                                 border: isEmpSelected ? `3px solid ${overlayBorder}` : isMoved ? '1.5px solid #16a34a' : '1.5px dashed rgba(255,255,255,0.6)',
+                                boxShadow: isEmpSelected ? `0 0 0 2px white, 0 0 16px ${overlayBorder}` : undefined,
                               }}>
                               {isMoved ? '✓' : (emp.first?.[0] || '') + (emp.last?.[0] || '')}
                             </button>
                             {isEmpSelected && (
-                              <span className="bg-white/95 backdrop-blur border border-gray-300 rounded px-1.5 py-0.5 text-[10px] font-semibold text-gray-800 shadow-md whitespace-nowrap animate-fade-in"
-                                style={{ borderColor: overlayBorder }}>
+                              <span className="bg-white/95 backdrop-blur border rounded px-1.5 py-0.5 text-[10px] font-semibold text-gray-800 shadow-lg whitespace-nowrap animate-fade-in"
+                                style={{ borderColor: overlayBorder, position: 'relative', zIndex: 51 }}>
                                 {emp.first} {emp.last}
                               </span>
                             )}
