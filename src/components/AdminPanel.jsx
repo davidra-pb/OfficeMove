@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getAllUsers, unblockUser, createUser, updateUserPassword, updateUserRole } from '../auth.js';
+import { getAllUsers, unblockUser, createUser, updateUserPassword, updateUserRole, disableUser, enableUser } from '../auth.js';
 import { logAction, ACTIONS } from '../auditLog.js';
 import { getStoredSession } from '../auth.js';
 
@@ -31,6 +31,20 @@ export default function AdminPanel() {
     await unblockUser(username);
     logAction(getUsername(), ACTIONS.UNBLOCK_USER, { target: username });
     showMsg(`${username} שוחרר`);
+    loadUsers();
+  };
+
+  const handleDisable = async (username) => {
+    await disableUser(username);
+    logAction(getUsername(), 'השבתת משתמש', { target: username });
+    showMsg(`${username} הושבת`);
+    loadUsers();
+  };
+
+  const handleEnable = async (username) => {
+    await enableUser(username);
+    logAction(getUsername(), 'הפעלת משתמש', { target: username });
+    showMsg(`${username} הופעל`);
     loadUsers();
   };
 
@@ -131,14 +145,21 @@ export default function AdminPanel() {
           <tbody>
             {users.map(user => (
               <tr key={user.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                <td className="px-5 py-3 font-medium text-gray-900 whitespace-nowrap">{user.username}</td>
+                <td className="px-5 py-3 whitespace-nowrap">
+                  <div className="font-medium text-gray-900">{user.username}</div>
+                  {user.displayName && <div className="text-xs text-gray-400">{user.displayName}</div>}
+                </td>
                 <td className="px-5 py-3">
                   <span className={`text-xs font-medium px-2 py-0.5 rounded ${user.role === 'admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
                     {user.role === 'admin' ? 'מנהל' : user.role === 'viewer' ? 'צופה' : 'משתמש'}
                   </span>
                 </td>
                 <td className="px-5 py-3">
-                  {user.blocked ? (
+                  {user.disabled ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-gray-400">
+                      <span className="w-2 h-2 rounded-full bg-gray-400" />מושבת
+                    </span>
+                  ) : user.blocked ? (
                     <span className="inline-flex items-center gap-1.5 text-xs text-red-600">
                       <span className="w-2 h-2 rounded-full bg-red-500" />חסום
                     </span>
@@ -161,6 +182,17 @@ export default function AdminPanel() {
                       className="text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors">
                       {user.role === 'admin' ? 'הסר מנהל' : 'הגדר מנהל'}
                     </button>
+                    {user.disabled ? (
+                      <button onClick={() => handleEnable(user.username)}
+                        className="text-xs font-medium text-green-600 hover:text-green-800 transition-colors">
+                        הפעל
+                      </button>
+                    ) : (
+                      <button onClick={() => handleDisable(user.username)}
+                        className="text-xs font-medium text-orange-500 hover:text-orange-700 transition-colors">
+                        השבת
+                      </button>
+                    )}
                     {editingPassword === user.username ? (
                       <div className="flex items-center gap-1">
                         <input type="text" value={editPass} onChange={(e) => setEditPass(e.target.value)} placeholder="סיסמה חדשה"
