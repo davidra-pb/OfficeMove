@@ -631,7 +631,7 @@ export default function HomePage({ movedSet, toggleMoved, markPhaseComplete, emp
   const isAllDone = totalMoved === totalEmps;
 
   return (
-    <div dir="rtl" className="space-y-4 max-w-2xl mx-auto">
+    <div dir="rtl" className="space-y-4">
       {/* Overall progress */}
       <div className="bg-white border border-gray-200 rounded-xl px-5 py-4">
         <div className="flex items-baseline justify-between mb-2">
