@@ -130,31 +130,72 @@ function PhaseTimeline({ phases, movedSet }) {
   );
 }
 
-function EmpCard({ emp, isMoved, onClick }) {
-  const Tag = onClick ? 'button' : 'div';
+function EmpCard({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStatus, onSettleDirect, onViewOnMap }) {
+  const statusInfo = STATUS_LABELS[status];
   return (
-    <Tag onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-colors ${
-        isMoved ? 'opacity-50' : onClick ? 'hover:bg-gray-50 cursor-pointer' : ''
-      }`}>
+    <div className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-colors ${isMoved && !status ? 'opacity-40' : ''}`}>
       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
       <div className="flex-1 min-w-0">
-        <div className={`text-sm font-medium text-gray-900 truncate ${isMoved ? 'line-through text-gray-400' : ''}`}>
-          {emp.first} {emp.last}
-        </div>
+        <div className="text-sm font-medium text-gray-900 truncate">{emp.first} {emp.last}</div>
         <div className="text-xs text-gray-400">{emp.dept}</div>
       </div>
-      <div className="flex items-center gap-2 shrink-0 text-xs font-mono">
+      <div className="flex items-center gap-1.5 shrink-0 text-xs font-mono">
         <span className="text-amber-600">{emp.oldRoom}</span>
         <span className="text-gray-300">←</span>
         <span className="text-sky-600">{emp.newRoom}</span>
       </div>
-      <span className={`text-xs font-medium shrink-0 ${isMoved ? 'text-green-500' : 'text-gray-300'}`}>✓</span>
-    </Tag>
+      {onViewOnMap && (
+        <button onClick={onViewOnMap}
+          className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+          title="צפה על המפה">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+        </button>
+      )}
+      {onAdvanceStatus && (
+        <div className="shrink-0 flex items-center rounded-md border overflow-hidden text-xs font-medium"
+          style={statusInfo ? { borderColor: statusInfo.color + '50' } : { borderColor: '#e5e7eb' }}>
+          {/* Back button */}
+          <button onClick={onRegressStatus}
+            className="px-1.5 py-1 transition-colors hover:brightness-95"
+            style={statusInfo ? { backgroundColor: statusInfo.bg, color: statusInfo.color } : { backgroundColor: '#f9fafb', color: '#d1d5db' }}
+            title="חזרה">
+            ‹
+          </button>
+          {/* Status label */}
+          <button onClick={onAdvanceStatus}
+            className="px-2 py-1 transition-colors hover:brightness-95 border-r border-l"
+            style={statusInfo ? {
+              backgroundColor: statusInfo.bg, color: statusInfo.color,
+              borderColor: statusInfo.color + '30',
+            } : { backgroundColor: '#f9fafb', color: '#9ca3af', borderColor: '#e5e7eb' }}>
+            {statusInfo ? statusInfo.label : 'ממתין'}
+          </button>
+          {/* Forward button */}
+          <button onClick={onAdvanceStatus}
+            className="px-1.5 py-1 transition-colors hover:brightness-95"
+            style={statusInfo ? { backgroundColor: statusInfo.bg, color: statusInfo.color } : { backgroundColor: '#f9fafb', color: '#d1d5db' }}
+            title="קדימה">
+            ›
+          </button>
+        </div>
+      )}
+      {/* Direct settle button — only when not already settled */}
+      {onSettleDirect && status !== 'settled' && (
+        <button onClick={onSettleDirect}
+          className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-gray-300 border border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-300 transition-colors"
+          title="התמקם — סיים">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
+      )}
+    </div>
   );
 }
 
-function WavePhaseView({ phase, employees, movedSet, toggleMoved }) {
+function WavePhaseView({ phase, employees, movedSet, toggleMoved, employeeStatuses, advanceStatus, regressStatus, settleDirect, onViewOnMap }) {
   const phaseEmps = employees.filter(e => e.phase === phase.id);
   const pending = phaseEmps.filter(e => !movedSet.has(e.id));
   const done = phaseEmps.filter(e => movedSet.has(e.id));
@@ -163,11 +204,19 @@ function WavePhaseView({ phase, employees, movedSet, toggleMoved }) {
     <div className="divide-y divide-gray-100">
       {pending.map(emp => (
         <EmpCard key={emp.id} emp={emp} isMoved={false}
-          onClick={toggleMoved ? () => toggleMoved(emp.id) : undefined} />
+          status={employeeStatuses[emp.id]}
+          onAdvanceStatus={advanceStatus ? () => advanceStatus(emp.id) : undefined}
+          onRegressStatus={regressStatus ? () => regressStatus(emp.id) : undefined}
+          onSettleDirect={settleDirect ? () => settleDirect(emp.id) : undefined}
+          onViewOnMap={onViewOnMap ? () => onViewOnMap(emp) : undefined} />
       ))}
       {done.map(emp => (
         <EmpCard key={emp.id} emp={emp} isMoved={true}
-          onClick={toggleMoved ? () => toggleMoved(emp.id) : undefined} />
+          status={employeeStatuses[emp.id]}
+          onAdvanceStatus={advanceStatus ? () => advanceStatus(emp.id) : undefined}
+          onRegressStatus={regressStatus ? () => regressStatus(emp.id) : undefined}
+          onSettleDirect={settleDirect ? () => settleDirect(emp.id) : undefined}
+          onViewOnMap={onViewOnMap ? () => onViewOnMap(emp) : undefined} />
       ))}
     </div>
   );
@@ -227,19 +276,16 @@ function computeSCCWaves(phaseId, movedSet) {
 }
 
 // Unified row used in SCC wave views — consistent with app's design language
-function EmpRow({ emp, isMoved, onClick }) {
-  const Tag = onClick ? 'button' : 'div';
+function EmpRow({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStatus, onSettleDirect, onViewOnMap }) {
+  const statusInfo = STATUS_LABELS[status];
   return (
-    <Tag onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-colors ${
-        isMoved ? 'opacity-40' : onClick ? 'hover:bg-gray-50 cursor-pointer' : ''
-      }`}>
+    <div className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-colors ${
+      isMoved && !status ? 'opacity-40' : onClick ? 'hover:bg-gray-50' : ''
+    }`}>
       <span className="w-2.5 h-2.5 rounded-full shrink-0"
         style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
       <div className="flex-1 min-w-0">
-        <div className={`text-sm font-medium truncate ${isMoved ? 'line-through text-gray-400' : 'text-gray-900'}`}>
-          {emp.first} {emp.last}
-        </div>
+        <div className="text-sm font-medium text-gray-900 truncate">{emp.first} {emp.last}</div>
         <div className="text-xs text-gray-400 truncate">
           {emp.dept}
           {emp.replaces && emp.replaces !== 'חדר ריק' && emp.replaces !== 'חדר חדש / ריק' && (
@@ -252,12 +298,51 @@ function EmpRow({ emp, isMoved, onClick }) {
         <span className="text-gray-300">←</span>
         <span className="text-sky-600">{emp.newRoom}</span>
       </div>
-      <span className={`text-xs shrink-0 ${isMoved ? 'text-green-500' : 'text-gray-300'}`}>✓</span>
-    </Tag>
+      {onViewOnMap && (
+        <button onClick={onViewOnMap}
+          className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+          title="צפה על המפה">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+        </button>
+      )}
+      {onAdvanceStatus ? (
+        <div className="shrink-0 flex items-center rounded-md border overflow-hidden text-xs font-medium"
+          style={statusInfo ? { borderColor: statusInfo.color + '50' } : { borderColor: '#e5e7eb' }}>
+          <button onClick={onRegressStatus}
+            className="px-1.5 py-1 transition-colors hover:brightness-95"
+            style={statusInfo ? { backgroundColor: statusInfo.bg, color: statusInfo.color } : { backgroundColor: '#f9fafb', color: '#d1d5db' }}>
+            ‹
+          </button>
+          <button onClick={onAdvanceStatus}
+            className="px-2 py-1 transition-colors hover:brightness-95 border-r border-l"
+            style={statusInfo ? { backgroundColor: statusInfo.bg, color: statusInfo.color, borderColor: statusInfo.color + '30' } : { backgroundColor: '#f9fafb', color: '#9ca3af', borderColor: '#e5e7eb' }}>
+            {statusInfo ? statusInfo.label : 'ממתין'}
+          </button>
+          <button onClick={onAdvanceStatus}
+            className="px-1.5 py-1 transition-colors hover:brightness-95"
+            style={statusInfo ? { backgroundColor: statusInfo.bg, color: statusInfo.color } : { backgroundColor: '#f9fafb', color: '#d1d5db' }}>
+            ›
+          </button>
+        </div>
+      ) : (
+        <span className={`text-xs shrink-0 ${isMoved ? 'text-green-500' : 'text-gray-300'}`}>✓</span>
+      )}
+      {onSettleDirect && status !== 'settled' && (
+        <button onClick={onSettleDirect}
+          className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-gray-300 border border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-300 transition-colors"
+          title="התמקם — סיים">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
+      )}
+    </div>
   );
 }
 
-function SCCPhaseView({ phase, movedSet, toggleMoved }) {
+function SCCPhaseView({ phase, movedSet, toggleMoved, employeeStatuses, advanceStatus, regressStatus, settleDirect, onViewOnMap }) {
   const allPhaseEmps = EMPLOYEES.filter(e => e.phase === phase.id);
   const done = allPhaseEmps.filter(e => movedSet.has(e.id)).length;
   const total = allPhaseEmps.length;
@@ -332,7 +417,7 @@ function SCCPhaseView({ phase, movedSet, toggleMoved }) {
                   {wave.map(id => {
                     const emp = empById[id];
                     if (!emp) return null;
-                    return <EmpRow key={id} emp={emp} isMoved={true} onClick={toggleMoved ? () => toggleMoved(id) : undefined} />;
+                    return <EmpRow key={id} emp={emp} isMoved={true} onClick={toggleMoved ? () => toggleMoved(id) : undefined} status={employeeStatuses[id]} onAdvanceStatus={advanceStatus ? () => advanceStatus(id) : undefined} onRegressStatus={regressStatus ? () => regressStatus(id) : undefined} onSettleDirect={settleDirect ? () => settleDirect(id) : undefined} onViewOnMap={onViewOnMap ? () => onViewOnMap(emp) : undefined} />;
                   })}
                 </div>
               </div>
@@ -370,7 +455,7 @@ function SCCPhaseView({ phase, movedSet, toggleMoved }) {
                     const emp = empById[id];
                     if (!emp) return null;
                     const isMoved = movedSet.has(id);
-                    return <EmpRow key={id} emp={emp} isMoved={isMoved} onClick={toggleMoved ? () => toggleMoved(id) : undefined} />;
+                    return <EmpRow key={id} emp={emp} isMoved={isMoved} onClick={toggleMoved ? () => toggleMoved(id) : undefined} status={employeeStatuses[id]} onAdvanceStatus={advanceStatus ? () => advanceStatus(id) : undefined} onRegressStatus={regressStatus ? () => regressStatus(id) : undefined} onSettleDirect={settleDirect ? () => settleDirect(id) : undefined} onViewOnMap={onViewOnMap ? () => onViewOnMap(emp) : undefined} />;
                   })}
                 </div>
 
@@ -399,7 +484,13 @@ function SCCPhaseView({ phase, movedSet, toggleMoved }) {
   );
 }
 
-export default function HomePage({ movedSet, toggleMoved, markPhaseComplete }) {
+const STATUS_LABELS = {
+  packing:  { label: 'אריזה',   color: '#f59e0b', bg: '#fef3c7', dot: '#f59e0b' },
+  transit:  { label: 'במעבר',  color: '#3b82f6', bg: '#dbeafe', dot: '#3b82f6' },
+  settled:  { label: 'התמקם',  color: '#22c55e', bg: '#dcfce7', dot: '#22c55e' },
+};
+
+export default function HomePage({ movedSet, toggleMoved, markPhaseComplete, employeeStatuses = {}, advanceStatus, regressStatus, settleDirect, onViewOnMap }) {
   // Overall progress
   const totalMoved = movedSet.size;
   const totalEmps = EMPLOYEES.length;
@@ -446,6 +537,38 @@ export default function HomePage({ movedSet, toggleMoved, markPhaseComplete }) {
         </div>
       )}
 
+      {/* Progress infographic — all phases */}
+      <div className="bg-white border border-gray-200 rounded-xl px-5 py-4">
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">התקדמות לפי שלבים</div>
+        <div className="space-y-2">
+          {PHASES.map(p => {
+            const phaseEmps = EMPLOYEES.filter(e => e.phase === p.id);
+            const total = phaseEmps.length;
+            const moved = phaseEmps.filter(e => movedSet.has(e.id)).length;
+            const pct = total > 0 ? (moved / total) * 100 : 0;
+            const isActive = activePhase?.id === p.id;
+            const isDone = moved === total && total > 0;
+            return (
+              <div key={p.id} className="flex items-center gap-3">
+                <div className={`text-xs font-medium shrink-0 text-right ${isActive ? 'text-gray-900' : 'text-gray-400'}`}
+                  style={{ width: '120px' }}>
+                  {p.name.split('—')[0].trim()}
+                </div>
+                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${pct}%`, backgroundColor: isDone ? '#22c55e' : p.color }} />
+                </div>
+                <div className={`text-xs tabular-nums shrink-0 ${isDone ? 'text-green-600 font-medium' : 'text-gray-400'}`}
+                  style={{ width: '42px', textAlign: 'left' }}>
+                  {moved}/{total}
+                </div>
+                {isActive && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: p.color }} />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Active phase — matches Checklist card style */}
       {!isAllDone && activePhase && (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden"
@@ -488,9 +611,9 @@ export default function HomePage({ movedSet, toggleMoved, markPhaseComplete }) {
 
           <div>
             {activePhase.type === 'scc' ? (
-              <SCCPhaseView phase={activePhase} movedSet={movedSet} toggleMoved={toggleMoved} />
+              <SCCPhaseView phase={activePhase} movedSet={movedSet} toggleMoved={toggleMoved} employeeStatuses={employeeStatuses} advanceStatus={advanceStatus} regressStatus={regressStatus} settleDirect={settleDirect} onViewOnMap={onViewOnMap} />
             ) : (
-              <WavePhaseView phase={activePhase} employees={EMPLOYEES} movedSet={movedSet} toggleMoved={toggleMoved} />
+              <WavePhaseView phase={activePhase} employees={EMPLOYEES} movedSet={movedSet} toggleMoved={toggleMoved} employeeStatuses={employeeStatuses} advanceStatus={advanceStatus} regressStatus={regressStatus} settleDirect={settleDirect} onViewOnMap={onViewOnMap} />
             )}
           </div>
         </div>
