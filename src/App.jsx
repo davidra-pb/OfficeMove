@@ -29,6 +29,7 @@ export default function App() {
   const [compareEmployee, setCompareEmployee] = useState(null);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [employeeStatuses, setEmployeeStatuses] = useState({});
+  const [employeeNotes, setEmployeeNotes] = useState({});
   const idleTimer = useRef(null);
   const currentUserRef = useRef(currentUser);
   useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
@@ -41,6 +42,7 @@ export default function App() {
       if (snap.exists()) {
         setMovedSet(new Set(snap.data().movedIds ?? []));
         setEmployeeStatuses(snap.data().employeeStatuses ?? {});
+        setEmployeeNotes(snap.data().employeeNotes ?? {});
       } else {
         setDoc(ref, { movedIds: [], employeeStatuses: {} });
       }
@@ -112,13 +114,19 @@ export default function App() {
     const ref = PROGRESS_REF();
     const emp = EMPLOYEES.find(e => e.id === empId);
     const empName = emp ? `${emp.first} ${emp.last}` : String(empId);
+    const update = {};
     if (movedSet.has(empId)) {
-      updateDoc(ref, { movedIds: arrayRemove(empId) });
+      // Unmark: remove from movedIds AND clear status
+      update.movedIds = arrayRemove(empId);
+      update[`employeeStatuses.${empId}`] = deleteField();
       logAction(currentUserRef.current?.username, ACTIONS.UNMARK_MOVED, { employee: empName });
     } else {
-      updateDoc(ref, { movedIds: arrayUnion(empId) });
+      // Mark: add to movedIds AND set status to 'settled'
+      update.movedIds = arrayUnion(empId);
+      update[`employeeStatuses.${empId}`] = 'settled';
       logAction(currentUserRef.current?.username, ACTIONS.MARK_MOVED, { employee: empName });
     }
+    updateDoc(ref, update);
   }, [movedSet]);
 
   const getPhaseStatus = useCallback((phaseId) => {
@@ -132,15 +140,23 @@ export default function App() {
 
   const markPhaseComplete = useCallback((phaseId) => {
     const phase = PHASES.find(p => p.id === phaseId);
-    const phaseEmpIds = EMPLOYEES.filter((e) => e.phase === phaseId).map((e) => e.id);
-    updateDoc(PROGRESS_REF(), { movedIds: arrayUnion(...phaseEmpIds) });
+    const phaseEmps = EMPLOYEES.filter((e) => e.phase === phaseId);
+    const phaseEmpIds = phaseEmps.map((e) => e.id);
+    // Mark as moved AND set status to 'settled' for all
+    const statusUpdates = {};
+    phaseEmps.forEach(e => { statusUpdates[`employeeStatuses.${e.id}`] = 'settled'; });
+    updateDoc(PROGRESS_REF(), { movedIds: arrayUnion(...phaseEmpIds), ...statusUpdates });
     logAction(currentUserRef.current?.username, ACTIONS.MARK_PHASE_COMPLETE, { phase: phase?.name || phaseId });
   }, []);
 
   const unmarkPhase = useCallback((phaseId) => {
     const phase = PHASES.find(p => p.id === phaseId);
-    const phaseEmpIds = EMPLOYEES.filter((e) => e.phase === phaseId).map((e) => e.id);
-    updateDoc(PROGRESS_REF(), { movedIds: arrayRemove(...phaseEmpIds) });
+    const phaseEmps = EMPLOYEES.filter((e) => e.phase === phaseId);
+    const phaseEmpIds = phaseEmps.map((e) => e.id);
+    // Remove moved AND clear statuses
+    const statusUpdates = {};
+    phaseEmps.forEach(e => { statusUpdates[`employeeStatuses.${e.id}`] = deleteField(); });
+    updateDoc(PROGRESS_REF(), { movedIds: arrayRemove(...phaseEmpIds), ...statusUpdates });
     logAction(currentUserRef.current?.username, ACTIONS.UNMARK_PHASE, { phase: phase?.name || phaseId });
   }, []);
 
@@ -149,12 +165,10 @@ export default function App() {
   const setEmployeeStatus = useCallback((empId, status) => {
     const update = {};
     update[`employeeStatuses.${empId}`] = status ?? deleteField();
+    // 'settled' = moved. Any other status (including null) = not moved.
+    update.movedIds = status === 'settled' ? arrayUnion(empId) : arrayRemove(empId);
     updateDoc(PROGRESS_REF(), update);
-    // 'settled' also marks as moved
-    if (status === 'settled' && !movedSet.has(empId)) {
-      updateDoc(PROGRESS_REF(), { movedIds: arrayUnion(empId) });
-    }
-  }, [movedSet]);
+  }, []);
 
   const advanceStatus = useCallback((empId) => {
     const current = employeeStatuses[empId] ?? null;
@@ -175,6 +189,12 @@ export default function App() {
   const settleDirect = useCallback((empId) => {
     setEmployeeStatus(empId, 'settled');
   }, [setEmployeeStatus]);
+
+  const setEmployeeNote = useCallback((empId, note) => {
+    const update = {};
+    update[`employeeNotes.${empId}`] = note ? note : deleteField();
+    updateDoc(PROGRESS_REF(), update);
+  }, []);
 
   const [resetting, setResetting] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -300,7 +320,111 @@ export default function App() {
         <StatsBar employees={EMPLOYEES} phases={PHASES} movedSet={movedSet} departments={DEPARTMENTS} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 mt-6 flex flex-col md:flex-row md:items-center gap-4">
+      {/* Kanban status buckets — above tabs */}
+      {(() => {
+        // Floor managers — color by destination floor
+        const FLOOR_MANAGERS = [
+          { name: 'רוני שלום',  bld: 'ישראל קנדה', floor: 8, bg: '#ede9fe', border: '#8b5cf6', text: '#6d28d9' },
+          { name: 'עמית פרדו', bld: 'ישראל קנדה', floor: 6, bg: '#ccfbf1', border: '#14b8a6', text: '#0f766e' },
+          { name: 'שיר ארמנדו', bld: 'אקרו',        floor: 8, bg: '#ffedd5', border: '#f97316', text: '#c2410c' },
+          { name: 'שלי לוי',   bld: 'אקרו',        floor: 7, bg: '#ffe4e6', border: '#f43f5e', text: '#be123c' },
+        ];
+        const getManagerColor = (emp) => {
+          const m = FLOOR_MANAGERS.find(m => m.bld === emp.newBld && m.floor === emp.newFloor);
+          return m || { bg: '#f9fafb', border: '#e5e7eb', text: '#6b7280' };
+        };
+
+        // Find current active phase (first non-complete)
+        const activePhaseId = PHASES.find(p => {
+          const phaseEmps = EMPLOYEES.filter(e => e.phase === p.id);
+          return phaseEmps.length > 0 && phaseEmps.some(e => !movedSet.has(e.id));
+        })?.id;
+        const activePhase = PHASES.find(p => p.id === activePhaseId);
+
+        const buckets = [
+          { key: null,       label: 'ממתין',  border: '#e5e7eb', bg: '#f9fafb', dot: '#9ca3af', text: '#6b7280' },
+          { key: 'packing',  label: 'אריזה',  border: '#fde68a', bg: '#fffbeb', dot: '#f59e0b', text: '#d97706' },
+          { key: 'transit',  label: 'במעבר',  border: '#bfdbfe', bg: '#eff6ff', dot: '#3b82f6', text: '#2563eb' },
+          { key: 'settled',  label: 'התמקם', border: '#bbf7d0', bg: '#f0fdf4', dot: '#22c55e', text: '#16a34a' },
+        ];
+        return (
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 mt-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {buckets.map(bucket => {
+                const emps = bucket.key === null
+                  // Waiting: only show employees from the current active phase with no status
+                  ? EMPLOYEES.filter(e => e.phase === activePhaseId && !employeeStatuses[e.id])
+                  : EMPLOYEES.filter(e => employeeStatuses[e.id] === bucket.key);
+                return (
+                  <div key={String(bucket.key)} className="rounded-xl border flex flex-col"
+                    style={{ borderColor: bucket.border, backgroundColor: bucket.bg, minHeight: bucket.key === 'transit' ? '260px' : '120px' }}>
+                    {/* Bucket header */}
+                    <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: bucket.border }}>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: bucket.key === null && activePhase ? activePhase.color : bucket.dot }} />
+                        <span className="text-xs font-semibold truncate" style={{ color: bucket.text }}>{bucket.label}</span>
+                        {bucket.key === null && activePhase && (
+                          <span className="text-[9px] text-gray-400 truncate hidden sm:inline">· {activePhase.name.split('—')[0].trim()}</span>
+                        )}
+                      </div>
+                      <span className="text-xs font-bold tabular-nums shrink-0" style={{ color: bucket.text }}>{emps.length}</span>
+                    </div>
+                    {/* Employee content */}
+                    <div className="px-2 py-2 overflow-y-auto flex-1">
+                      {/* Transit bucket: show ONLY per-manager breakdown, no flat list */}
+                      {bucket.key === 'transit' ? (
+                        <div className="space-y-2">
+                          {FLOOR_MANAGERS.map(m => {
+                            const mEmps = EMPLOYEES.filter(e => employeeStatuses[e.id] === 'transit' && e.newBld === m.bld && e.newFloor === m.floor);
+                            return (
+                              <div key={m.name}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: m.border }} />
+                                    <span className="text-[10px] font-semibold" style={{ color: m.text }}>{m.name}</span>
+                                    <span className="text-[9px] opacity-60" style={{ color: m.text }}>{m.bld === 'ישראל קנדה' ? 'י"ק' : 'אקרו'} ק{m.floor}</span>
+                                  </div>
+                                  <span className="text-[10px] font-bold tabular-nums" style={{ color: m.text }}>{mEmps.length}</span>
+                                </div>
+                                {mEmps.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {mEmps.map(emp => (
+                                      <div key={emp.id} className="flex flex-col items-center px-1.5 py-0.5 rounded border text-center"
+                                        style={{ backgroundColor: 'white', borderColor: m.border }}>
+                                        <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: m.text }}>{emp.first} {emp.last}</span>
+                                        <span className="text-[9px] font-mono opacity-60" style={{ color: m.text }}>{emp.newRoom}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-[9px] text-gray-300 pr-2">—</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : emps.length === 0 ? (
+                        <span className="text-[10px] text-gray-300 px-1">{bucket.key === null ? 'כולם יצאו מהשלב' : 'ריק'}</span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {emps.map(emp => (
+                            <span key={emp.id}
+                              className="text-[10px] font-medium px-1.5 py-0.5 rounded-md border whitespace-nowrap bg-white border-gray-200 text-gray-600">
+                              {emp.first} {emp.last}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 mt-4 flex flex-col md:flex-row md:items-center gap-4">
         <div className="flex flex-wrap gap-4 border-b border-gray-200">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => switchTab(tab.id)}
@@ -366,15 +490,17 @@ export default function App() {
             advanceStatus={canEdit ? advanceStatus : undefined}
             regressStatus={canEdit ? regressStatus : undefined}
             settleDirect={canEdit ? settleDirect : undefined}
+            employeeNotes={employeeNotes}
+            setEmployeeNote={canEdit ? setEmployeeNote : undefined}
             onViewOnMap={(emp) => { setCompareEmployee(emp); switchTab('comparison'); }}
             toggleMoved={canEdit ? toggleMoved : undefined}
-            markPhaseComplete={canEdit ? markPhaseComplete : undefined} />
+            markPhaseComplete={isAdmin ? markPhaseComplete : undefined} />
         )}
         {activeTab === 'checklist' && (
           <Checklist phases={PHASES} employees={filteredEmployees} movedSet={movedSet}
             toggleMoved={canEdit ? toggleMoved : undefined}
-            markPhaseComplete={canEdit ? markPhaseComplete : undefined}
-            unmarkPhase={canEdit ? unmarkPhase : undefined}
+            markPhaseComplete={isAdmin ? markPhaseComplete : undefined}
+            unmarkPhase={isAdmin ? unmarkPhase : undefined}
             getPhaseStatus={getPhaseStatus} dayFilter={dayFilter}
             onSelectEmployee={setSelectedEmployee} departments={DEPARTMENTS} />
         )}
@@ -396,7 +522,7 @@ export default function App() {
       </main>
 
       <footer className="text-center py-4 text-[11px] text-gray-300 select-none">
-        v2.5
+        v2.6
       </footer>
 
       {/* Admin Side Menu */}
