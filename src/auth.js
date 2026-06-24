@@ -14,9 +14,20 @@ const INITIAL_USERS = [
   { username: 'noa', password: 'Noa@2026', role: 'user' },
 ];
 
+const FLOOR_MANAGER_USERS = [
+  { username: 'roni', password: 'Roni@2026', role: 'user', displayName: 'רוני שלום' },
+  { username: 'amit', password: 'Amit@2026', role: 'user', displayName: 'עמית פרדו' },
+  { username: 'shir', password: 'Shir@2026', role: 'user', displayName: 'שיר ארמנדו' },
+  { username: 'sheli', password: 'Sheli@2026', role: 'user', displayName: 'שלי לוי' },
+];
+
 export async function seedUsersIfNeeded() {
   const snap = await getDocs(collection(db, 'users'));
-  if (snap.size > 0) return;
+  if (snap.size > 0) {
+    // Also ensure floor managers exist (added later)
+    await seedFloorManagers();
+    return;
+  }
   for (const u of INITIAL_USERS) {
     const hash = await hashPassword(u.password);
     await setDoc(doc(db, 'users', u.username), {
@@ -24,8 +35,28 @@ export async function seedUsersIfNeeded() {
       passwordHash: hash,
       role: u.role,
       blocked: false,
+      disabled: false,
       failedAttempts: 0,
     });
+  }
+  await seedFloorManagers();
+}
+
+export async function seedFloorManagers() {
+  for (const u of FLOOR_MANAGER_USERS) {
+    const existing = await getDoc(doc(db, 'users', u.username));
+    if (!existing.exists()) {
+      const hash = await hashPassword(u.password);
+      await setDoc(doc(db, 'users', u.username), {
+        username: u.username,
+        passwordHash: hash,
+        displayName: u.displayName,
+        role: u.role,
+        blocked: false,
+        disabled: false,
+        failedAttempts: 0,
+      });
+    }
   }
 }
 
@@ -40,6 +71,10 @@ export async function loginUser(username, password) {
 
   const userData = snap.data();
 
+  if (userData.disabled) {
+    return { success: false, error: 'החשבון הושבת. פנה למנהל המערכת.' };
+  }
+
   if (userData.blocked) {
     return { success: false, error: 'החשבון נחסם. פנה למנהל המערכת.' };
   }
@@ -51,7 +86,6 @@ export async function loginUser(username, password) {
     const updates = { failedAttempts: newAttempts };
     if (newAttempts >= 3) updates.blocked = true;
     await updateDoc(ref, updates);
-
     if (newAttempts >= 3) {
       return { success: false, error: 'החשבון נחסם לאחר 3 ניסיונות כושלים.' };
     }
@@ -60,7 +94,7 @@ export async function loginUser(username, password) {
 
   await updateDoc(ref, { failedAttempts: 0 });
 
-  const session = { username: normalized, role: userData.role };
+  const session = { username: normalized, role: userData.role, displayName: userData.displayName || null };
   localStorage.setItem('officeMoveSession', JSON.stringify(session));
   return { success: true, user: session };
 }
@@ -86,6 +120,14 @@ export async function unblockUser(username) {
   await updateDoc(doc(db, 'users', username), { blocked: false, failedAttempts: 0 });
 }
 
+export async function disableUser(username) {
+  await updateDoc(doc(db, 'users', username), { disabled: true });
+}
+
+export async function enableUser(username) {
+  await updateDoc(doc(db, 'users', username), { disabled: false });
+}
+
 export async function createUser(username, password, role) {
   const normalized = username.trim().toLowerCase();
   const existing = await getDoc(doc(db, 'users', normalized));
@@ -98,6 +140,7 @@ export async function createUser(username, password, role) {
     passwordHash: hash,
     role: role || 'user',
     blocked: false,
+    disabled: false,
     failedAttempts: 0,
   });
   return { success: true };
