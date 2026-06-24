@@ -522,7 +522,7 @@ export default function App() {
       </main>
 
       <footer className="text-center py-4 text-[11px] text-gray-300 select-none">
-        v2.6
+        v2.7
       </footer>
 
       {/* Admin Side Menu */}
