@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { PHASES, EMPLOYEES } from '../data/moveData.js';
 
 // Normalize room IDs so '1B' === '01B' for comparison
@@ -130,14 +130,70 @@ function PhaseTimeline({ phases, movedSet }) {
   );
 }
 
-function EmpCard({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStatus, onSettleDirect, onViewOnMap }) {
+// NoteInline — editing state controlled by parent via `editing`/`setEditing`
+function NoteInline({ empId, note, onSetNote, editing, setEditing }) {
+  const [draft, setDraft] = useState(note || '');
+
+  const save = (e) => {
+    e.stopPropagation();
+    onSetNote(empId, draft.trim());
+    setEditing(false);
+  };
+  const cancel = (e) => {
+    e.stopPropagation();
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5 mt-1" onClick={e => e.stopPropagation()}>
+        <input
+          autoFocus dir="rtl"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') save(e); if (e.key === 'Escape') cancel(e); }}
+          placeholder="הוסף הערה..."
+          className="flex-1 text-xs border border-gray-200 rounded-md px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-gray-300 bg-white text-gray-700 min-w-0"
+          style={{ direction: 'rtl', textAlign: 'right' }}
+        />
+        <button onMouseDown={save}
+          className="w-6 h-6 rounded-md bg-gray-800 text-white flex items-center justify-center hover:bg-gray-700 shrink-0 text-xs font-bold">✓</button>
+        <button onMouseDown={cancel}
+          className="w-6 h-6 rounded-md bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 shrink-0 text-xs font-bold">✕</button>
+      </div>
+    );
+  }
+
+  if (note) {
+    return (
+      <button onClick={e => { e.stopPropagation(); setDraft(note); setEditing(true); }}
+        className="mt-0.5 text-xs text-gray-700 bg-white border border-gray-200 rounded-md px-2 py-0.5 text-right w-full hover:bg-gray-50 transition-colors whitespace-pre-wrap break-words"
+        style={{ direction: 'rtl', textAlign: 'right' }}>
+        {note}
+      </button>
+    );
+  }
+
+  return null;
+}
+
+
+const PencilIcon = () => (
+  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+);
+
+function EmpCard({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStatus, onSettleDirect, onViewOnMap, note, onSetNote }) {
   const statusInfo = STATUS_LABELS[status];
+  const [noteEditing, setNoteEditing] = useState(false);
   return (
     <div className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-colors ${isMoved && !status ? 'opacity-40' : ''}`}>
       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: DEPT_COLORS[emp.dept] || '#6b7280' }} />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-gray-900 truncate">{emp.first} {emp.last}</div>
         <div className="text-xs text-gray-400">{emp.dept}</div>
+        {onSetNote && <NoteInline empId={emp.id} note={note} onSetNote={onSetNote} editing={noteEditing} setEditing={setNoteEditing} />}
       </div>
       <div className="flex items-center gap-1.5 shrink-0 text-xs font-mono">
         <span className="text-amber-600">{emp.oldRoom}</span>
@@ -151,6 +207,13 @@ function EmpCard({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStat
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
           </svg>
+        </button>
+      )}
+      {onSetNote && (
+        <button onMouseDown={e => { e.stopPropagation(); setNoteEditing(true); }}
+          className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-gray-300 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+          title="הוסף / ערוך הערה">
+          <PencilIcon />
         </button>
       )}
       {onAdvanceStatus && (
@@ -195,7 +258,7 @@ function EmpCard({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStat
   );
 }
 
-function WavePhaseView({ phase, employees, movedSet, toggleMoved, employeeStatuses, advanceStatus, regressStatus, settleDirect, onViewOnMap }) {
+function WavePhaseView({ phase, employees, movedSet, toggleMoved, employeeStatuses, advanceStatus, regressStatus, settleDirect, onViewOnMap, employeeNotes, setEmployeeNote }) {
   const phaseEmps = employees.filter(e => e.phase === phase.id);
   const pending = phaseEmps.filter(e => !movedSet.has(e.id));
   const done = phaseEmps.filter(e => movedSet.has(e.id));
@@ -208,6 +271,8 @@ function WavePhaseView({ phase, employees, movedSet, toggleMoved, employeeStatus
           onAdvanceStatus={advanceStatus ? () => advanceStatus(emp.id) : undefined}
           onRegressStatus={regressStatus ? () => regressStatus(emp.id) : undefined}
           onSettleDirect={settleDirect ? () => settleDirect(emp.id) : undefined}
+          note={employeeNotes?.[emp.id]}
+          onSetNote={setEmployeeNote}
           onViewOnMap={onViewOnMap ? () => onViewOnMap(emp) : undefined} />
       ))}
       {done.map(emp => (
@@ -216,6 +281,8 @@ function WavePhaseView({ phase, employees, movedSet, toggleMoved, employeeStatus
           onAdvanceStatus={advanceStatus ? () => advanceStatus(emp.id) : undefined}
           onRegressStatus={regressStatus ? () => regressStatus(emp.id) : undefined}
           onSettleDirect={settleDirect ? () => settleDirect(emp.id) : undefined}
+          note={employeeNotes?.[emp.id]}
+          onSetNote={setEmployeeNote}
           onViewOnMap={onViewOnMap ? () => onViewOnMap(emp) : undefined} />
       ))}
     </div>
@@ -276,8 +343,9 @@ function computeSCCWaves(phaseId, movedSet) {
 }
 
 // Unified row used in SCC wave views — consistent with app's design language
-function EmpRow({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStatus, onSettleDirect, onViewOnMap }) {
+function EmpRow({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStatus, onSettleDirect, onViewOnMap, note, onSetNote }) {
   const statusInfo = STATUS_LABELS[status];
+  const [noteEditing, setNoteEditing] = useState(false);
   return (
     <div className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-colors ${
       isMoved && !status ? 'opacity-40' : onClick ? 'hover:bg-gray-50' : ''
@@ -292,6 +360,7 @@ function EmpRow({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStatu
             <span className="text-gray-300"> · מחליף: {emp.replaces}</span>
           )}
         </div>
+        {onSetNote && <NoteInline empId={emp.id} note={note} onSetNote={onSetNote} editing={noteEditing} setEditing={setNoteEditing} />}
       </div>
       <div className="flex items-center gap-1.5 shrink-0 text-xs font-mono">
         <span className="text-amber-600">{emp.oldRoom}</span>
@@ -305,6 +374,13 @@ function EmpRow({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStatu
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
           </svg>
+        </button>
+      )}
+      {onSetNote && (
+        <button onMouseDown={e => { e.stopPropagation(); setNoteEditing(true); }}
+          className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-gray-300 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+          title="הוסף / ערוך הערה">
+          <PencilIcon />
         </button>
       )}
       {onAdvanceStatus ? (
@@ -342,7 +418,7 @@ function EmpRow({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStatu
   );
 }
 
-function SCCPhaseView({ phase, movedSet, toggleMoved, employeeStatuses, advanceStatus, regressStatus, settleDirect, onViewOnMap }) {
+function SCCPhaseView({ phase, movedSet, toggleMoved, employeeStatuses, advanceStatus, regressStatus, settleDirect, onViewOnMap, employeeNotes, setEmployeeNote }) {
   const allPhaseEmps = EMPLOYEES.filter(e => e.phase === phase.id);
   const done = allPhaseEmps.filter(e => movedSet.has(e.id)).length;
   const total = allPhaseEmps.length;
@@ -417,7 +493,7 @@ function SCCPhaseView({ phase, movedSet, toggleMoved, employeeStatuses, advanceS
                   {wave.map(id => {
                     const emp = empById[id];
                     if (!emp) return null;
-                    return <EmpRow key={id} emp={emp} isMoved={true} onClick={toggleMoved ? () => toggleMoved(id) : undefined} status={employeeStatuses[id]} onAdvanceStatus={advanceStatus ? () => advanceStatus(id) : undefined} onRegressStatus={regressStatus ? () => regressStatus(id) : undefined} onSettleDirect={settleDirect ? () => settleDirect(id) : undefined} onViewOnMap={onViewOnMap ? () => onViewOnMap(emp) : undefined} />;
+                    return <EmpRow key={id} emp={emp} isMoved={true} onClick={toggleMoved ? () => toggleMoved(id) : undefined} status={employeeStatuses[id]} onAdvanceStatus={advanceStatus ? () => advanceStatus(id) : undefined} onRegressStatus={regressStatus ? () => regressStatus(id) : undefined} onSettleDirect={settleDirect ? () => settleDirect(id) : undefined} onViewOnMap={onViewOnMap ? () => onViewOnMap(emp) : undefined} note={employeeNotes?.[id]} onSetNote={setEmployeeNote} />;
                   })}
                 </div>
               </div>
@@ -455,7 +531,7 @@ function SCCPhaseView({ phase, movedSet, toggleMoved, employeeStatuses, advanceS
                     const emp = empById[id];
                     if (!emp) return null;
                     const isMoved = movedSet.has(id);
-                    return <EmpRow key={id} emp={emp} isMoved={isMoved} onClick={toggleMoved ? () => toggleMoved(id) : undefined} status={employeeStatuses[id]} onAdvanceStatus={advanceStatus ? () => advanceStatus(id) : undefined} onRegressStatus={regressStatus ? () => regressStatus(id) : undefined} onSettleDirect={settleDirect ? () => settleDirect(id) : undefined} onViewOnMap={onViewOnMap ? () => onViewOnMap(emp) : undefined} />;
+                    return <EmpRow key={id} emp={emp} isMoved={isMoved} onClick={toggleMoved ? () => toggleMoved(id) : undefined} status={employeeStatuses[id]} onAdvanceStatus={advanceStatus ? () => advanceStatus(id) : undefined} onRegressStatus={regressStatus ? () => regressStatus(id) : undefined} onSettleDirect={settleDirect ? () => settleDirect(id) : undefined} onViewOnMap={onViewOnMap ? () => onViewOnMap(emp) : undefined} note={employeeNotes?.[id]} onSetNote={setEmployeeNote} />;
                   })}
                 </div>
 
@@ -484,13 +560,58 @@ function SCCPhaseView({ phase, movedSet, toggleMoved, employeeStatuses, advanceS
   );
 }
 
+function PhaseAccordion({ phase, phaseEmps, movedCount, isDone, movedSet, employeeStatuses, advanceStatus, regressStatus, settleDirect, onViewOnMap, defaultOpen, employeeNotes, setEmployeeNote }) {
+  const [open, setOpen] = useState(defaultOpen || false);
+  return (
+    <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+      {/* Header — always visible, click to expand */}
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-right hover:bg-gray-50 transition-colors">
+        <div className="w-1.5 h-6 rounded-full shrink-0" style={{ backgroundColor: phase.color }} />
+        <div className="flex-1 min-w-0 text-right">
+          <div className="text-sm font-medium text-gray-700">{phase.name}</div>
+          <div className="text-xs text-gray-400">יום {phase.day === 1 ? "א'" : "ב'"} · {phase.time}</div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {isDone && <span className="text-[10px] font-medium text-green-600 bg-green-50 border border-green-200 rounded px-1.5 py-0.5">הושלם</span>}
+          {phase.type === 'scc' && <span className="text-[10px] font-medium text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded">סיבוב</span>}
+          <div className="text-sm font-semibold text-gray-500 tabular-nums">{movedCount}/{phaseEmps.length}</div>
+          <div className="h-1.5 w-16 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full rounded-full" style={{ width: `${phaseEmps.length ? (movedCount/phaseEmps.length)*100 : 0}%`, backgroundColor: isDone ? '#22c55e' : phase.color }} />
+          </div>
+          <svg className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+      {/* Employee rows — expanded */}
+      {open && (
+        <div className="border-t border-gray-100 divide-y divide-gray-50">
+          {phaseEmps.map(emp => {
+            const isMoved = movedSet.has(emp.id);
+            const status = employeeStatuses[emp.id];
+            return (
+              <EmpRow key={emp.id} emp={emp} isMoved={isMoved} status={status}
+                onAdvanceStatus={advanceStatus ? () => advanceStatus(emp.id) : undefined}
+                onRegressStatus={regressStatus ? () => regressStatus(emp.id) : undefined}
+                onSettleDirect={settleDirect ? () => settleDirect(emp.id) : undefined}
+                onViewOnMap={onViewOnMap ? () => onViewOnMap(emp) : undefined}
+                note={employeeNotes?.[emp.id]} onSetNote={setEmployeeNote} />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const STATUS_LABELS = {
   packing:  { label: 'אריזה',   color: '#f59e0b', bg: '#fef3c7', dot: '#f59e0b' },
   transit:  { label: 'במעבר',  color: '#3b82f6', bg: '#dbeafe', dot: '#3b82f6' },
   settled:  { label: 'התמקם',  color: '#22c55e', bg: '#dcfce7', dot: '#22c55e' },
 };
 
-export default function HomePage({ movedSet, toggleMoved, markPhaseComplete, employeeStatuses = {}, advanceStatus, regressStatus, settleDirect, onViewOnMap }) {
+export default function HomePage({ movedSet, toggleMoved, markPhaseComplete, employeeStatuses = {}, advanceStatus, regressStatus, settleDirect, onViewOnMap, employeeNotes = {}, setEmployeeNote }) {
   // Overall progress
   const totalMoved = movedSet.size;
   const totalEmps = EMPLOYEES.length;
@@ -537,38 +658,6 @@ export default function HomePage({ movedSet, toggleMoved, markPhaseComplete, emp
         </div>
       )}
 
-      {/* Progress infographic — all phases */}
-      <div className="bg-white border border-gray-200 rounded-xl px-5 py-4">
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">התקדמות לפי שלבים</div>
-        <div className="space-y-2">
-          {PHASES.map(p => {
-            const phaseEmps = EMPLOYEES.filter(e => e.phase === p.id);
-            const total = phaseEmps.length;
-            const moved = phaseEmps.filter(e => movedSet.has(e.id)).length;
-            const pct = total > 0 ? (moved / total) * 100 : 0;
-            const isActive = activePhase?.id === p.id;
-            const isDone = moved === total && total > 0;
-            return (
-              <div key={p.id} className="flex items-center gap-3">
-                <div className={`text-xs font-medium shrink-0 text-right ${isActive ? 'text-gray-900' : 'text-gray-400'}`}
-                  style={{ width: '120px' }}>
-                  {p.name.split('—')[0].trim()}
-                </div>
-                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${pct}%`, backgroundColor: isDone ? '#22c55e' : p.color }} />
-                </div>
-                <div className={`text-xs tabular-nums shrink-0 ${isDone ? 'text-green-600 font-medium' : 'text-gray-400'}`}
-                  style={{ width: '42px', textAlign: 'left' }}>
-                  {moved}/{total}
-                </div>
-                {isActive && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: p.color }} />}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Active phase — matches Checklist card style */}
       {!isAllDone && activePhase && (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden"
@@ -591,13 +680,39 @@ export default function HomePage({ movedSet, toggleMoved, markPhaseComplete, emp
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="text-left min-w-[80px]">
-                <div className="text-sm font-semibold text-gray-700 tabular-nums">
-                  {activePhaseDone}/{activePhaseEmps.length} <span className="font-normal text-gray-400 text-xs">הועברו</span>
+              <div className="text-left min-w-[120px]">
+                {/* Counts per stage */}
+                <div className="flex items-center gap-2 text-xs tabular-nums mb-1">
+                  {(() => {
+                    const total = activePhaseEmps.length;
+                    const settled = activePhaseEmps.filter(e => employeeStatuses[e.id] === 'settled').length;
+                    const transit = activePhaseEmps.filter(e => employeeStatuses[e.id] === 'transit').length;
+                    const packing = activePhaseEmps.filter(e => employeeStatuses[e.id] === 'packing').length;
+                    return (
+                      <>
+                        <span className="font-semibold text-gray-700">{settled}/{total}</span>
+                        <span className="text-gray-300">|</span>
+                        {transit > 0 && <span className="text-blue-500 font-medium">{transit} במעבר</span>}
+                        {packing > 0 && <span className="text-amber-500 font-medium">{packing} אריזה</span>}
+                      </>
+                    );
+                  })()}
                 </div>
-                <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${activePhaseEmps.length ? (activePhaseDone / activePhaseEmps.length) * 100 : 0}%`, backgroundColor: activePhase.color }} />
+                {/* Stacked progress bar */}
+                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden flex">
+                  {(() => {
+                    const total = activePhaseEmps.length || 1;
+                    const settled = activePhaseEmps.filter(e => employeeStatuses[e.id] === 'settled').length;
+                    const transit = activePhaseEmps.filter(e => employeeStatuses[e.id] === 'transit').length;
+                    const packing = activePhaseEmps.filter(e => employeeStatuses[e.id] === 'packing').length;
+                    return (
+                      <>
+                        <div className="h-full bg-green-500 transition-all duration-500" style={{ width: `${(settled/total)*100}%` }} />
+                        <div className="h-full bg-blue-400 transition-all duration-500"  style={{ width: `${(transit/total)*100}%` }} />
+                        <div className="h-full bg-amber-400 transition-all duration-500" style={{ width: `${(packing/total)*100}%` }} />
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               {activePhase.type === 'wave' && activePhaseDone < activePhaseEmps.length && markPhaseComplete && (
@@ -611,36 +726,29 @@ export default function HomePage({ movedSet, toggleMoved, markPhaseComplete, emp
 
           <div>
             {activePhase.type === 'scc' ? (
-              <SCCPhaseView phase={activePhase} movedSet={movedSet} toggleMoved={toggleMoved} employeeStatuses={employeeStatuses} advanceStatus={advanceStatus} regressStatus={regressStatus} settleDirect={settleDirect} onViewOnMap={onViewOnMap} />
+              <SCCPhaseView phase={activePhase} movedSet={movedSet} toggleMoved={toggleMoved} employeeStatuses={employeeStatuses} advanceStatus={advanceStatus} regressStatus={regressStatus} settleDirect={settleDirect} onViewOnMap={onViewOnMap} employeeNotes={employeeNotes} setEmployeeNote={setEmployeeNote} />
             ) : (
-              <WavePhaseView phase={activePhase} employees={EMPLOYEES} movedSet={movedSet} toggleMoved={toggleMoved} employeeStatuses={employeeStatuses} advanceStatus={advanceStatus} regressStatus={regressStatus} settleDirect={settleDirect} onViewOnMap={onViewOnMap} />
+              <WavePhaseView phase={activePhase} employees={EMPLOYEES} movedSet={movedSet} toggleMoved={toggleMoved} employeeStatuses={employeeStatuses} advanceStatus={advanceStatus} regressStatus={regressStatus} settleDirect={settleDirect} onViewOnMap={onViewOnMap} employeeNotes={employeeNotes} setEmployeeNote={setEmployeeNote} />
             )}
           </div>
         </div>
       )}
 
-      {/* Upcoming phases preview */}
+      {/* All other phases — collapsed but with status buttons */}
       {!isAllDone && (
         <div className="space-y-2">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">שלבים הבאים</div>
-          {PHASES.filter(p => {
-            const emps = EMPLOYEES.filter(e => e.phase === p.id);
-            return emps.every(e => !movedSet.has(e.id)) && p.id !== activePhase?.id;
-          }).slice(0, 3).map(p => {
-            const emps = EMPLOYEES.filter(e => e.phase === p.id);
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">כל השלבים</div>
+          {PHASES.filter(p => p.id !== activePhase?.id).map(p => {
+            const phaseEmps = EMPLOYEES.filter(e => e.phase === p.id);
+            const movedCount = phaseEmps.filter(e => movedSet.has(e.id)).length;
+            const isDone = movedCount === phaseEmps.length;
+            const hasActiveStatus = phaseEmps.some(e => employeeStatuses[e.id]);
             return (
-              <div key={p.id} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
-                <div className="w-2 h-8 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-700">{p.name}</div>
-                  <div className="text-xs text-gray-400">יום {p.day === 1 ? "א'" : "ב'"} · {p.time}</div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="text-sm font-semibold text-gray-600">{emps.length}</div>
-                  <div className="text-[10px] text-gray-400">עובדים</div>
-                </div>
-                {p.type === 'scc' && <span className="text-[10px] font-medium text-purple-500 bg-purple-50 px-2 py-0.5 rounded">סיבוב</span>}
-              </div>
+              <PhaseAccordion key={p.id} phase={p} phaseEmps={phaseEmps} movedCount={movedCount} isDone={isDone}
+                movedSet={movedSet} employeeStatuses={employeeStatuses}
+                advanceStatus={advanceStatus} regressStatus={regressStatus} settleDirect={settleDirect}
+                onViewOnMap={onViewOnMap} defaultOpen={hasActiveStatus}
+                employeeNotes={employeeNotes} setEmployeeNote={setEmployeeNote} />
             );
           })}
         </div>
