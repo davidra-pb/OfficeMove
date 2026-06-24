@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, collection, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove, collection, deleteDoc, deleteField, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase.js';
 import { PHASES, EMPLOYEES, DEPARTMENTS } from './data/moveData.js';
 import { getStoredSession, logout, seedUsersIfNeeded } from './auth.js';
@@ -28,6 +28,7 @@ export default function App() {
   const [dayFilter, setDayFilter] = useState(null);
   const [compareEmployee, setCompareEmployee] = useState(null);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [employeeStatuses, setEmployeeStatuses] = useState({});
   const idleTimer = useRef(null);
   const currentUserRef = useRef(currentUser);
   useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
@@ -39,8 +40,9 @@ export default function App() {
     const unsub = onSnapshot(ref, (snap) => {
       if (snap.exists()) {
         setMovedSet(new Set(snap.data().movedIds ?? []));
+        setEmployeeStatuses(snap.data().employeeStatuses ?? {});
       } else {
-        setDoc(ref, { movedIds: [] });
+        setDoc(ref, { movedIds: [], employeeStatuses: {} });
       }
     });
     return unsub;
@@ -141,6 +143,38 @@ export default function App() {
     updateDoc(PROGRESS_REF(), { movedIds: arrayRemove(...phaseEmpIds) });
     logAction(currentUserRef.current?.username, ACTIONS.UNMARK_PHASE, { phase: phase?.name || phaseId });
   }, []);
+
+  // Employee status: null | 'packing' | 'transit' | 'settled'
+  const STATUS_CYCLE = [null, 'packing', 'transit', 'settled'];
+  const setEmployeeStatus = useCallback((empId, status) => {
+    const update = {};
+    update[`employeeStatuses.${empId}`] = status ?? deleteField();
+    updateDoc(PROGRESS_REF(), update);
+    // 'settled' also marks as moved
+    if (status === 'settled' && !movedSet.has(empId)) {
+      updateDoc(PROGRESS_REF(), { movedIds: arrayUnion(empId) });
+    }
+  }, [movedSet]);
+
+  const advanceStatus = useCallback((empId) => {
+    const current = employeeStatuses[empId] ?? null;
+    const idx = STATUS_CYCLE.indexOf(current);
+    const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+    setEmployeeStatus(empId, next);
+    return next;
+  }, [employeeStatuses, setEmployeeStatus]);
+
+  const regressStatus = useCallback((empId) => {
+    const current = employeeStatuses[empId] ?? null;
+    const idx = STATUS_CYCLE.indexOf(current);
+    const prev = STATUS_CYCLE[(idx - 1 + STATUS_CYCLE.length) % STATUS_CYCLE.length];
+    setEmployeeStatus(empId, prev);
+    return prev;
+  }, [employeeStatuses, setEmployeeStatus]);
+
+  const settleDirect = useCallback((empId) => {
+    setEmployeeStatus(empId, 'settled');
+  }, [setEmployeeStatus]);
 
   const [resetting, setResetting] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -328,6 +362,11 @@ export default function App() {
         )}
         {activeTab === 'home' && (
           <HomePage movedSet={movedSet}
+            employeeStatuses={employeeStatuses}
+            advanceStatus={canEdit ? advanceStatus : undefined}
+            regressStatus={canEdit ? regressStatus : undefined}
+            settleDirect={canEdit ? settleDirect : undefined}
+            onViewOnMap={(emp) => { setCompareEmployee(emp); switchTab('comparison'); }}
             toggleMoved={canEdit ? toggleMoved : undefined}
             markPhaseComplete={canEdit ? markPhaseComplete : undefined} />
         )}
@@ -357,7 +396,7 @@ export default function App() {
       </main>
 
       <footer className="text-center py-4 text-[11px] text-gray-300 select-none">
-        v2.4
+        v2.5
       </footer>
 
       {/* Admin Side Menu */}
