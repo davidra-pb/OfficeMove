@@ -1,0 +1,9 @@
+{
+  "skills": [
+    {
+      "name": "deploy",
+      "description": "Backup, bump version, build and deploy the OfficeMove app to GitHub Pages",
+      "prompt_file": ".claude/skills/deploy.md"
+    }
+  ]
+}
