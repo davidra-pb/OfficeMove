@@ -1,15 +1,15 @@
 export const PHASES = [
   { id: 1, name: 'גל 1 — חופשי', day: 1, time: '08:00-09:30', type: 'wave', color: '#22c55e', colorLight: '#dcfce7', count: 13 },
-  { id: 2, name: 'גל 2', day: 1, time: '09:30-10:30', type: 'wave', color: '#38bdf8', colorLight: '#e0f2fe', count: 4 },
-  { id: 3, name: 'גלים 3-4', day: 1, time: '10:30-11:30', type: 'wave', color: '#fbbf24', colorLight: '#fef9c3', count: 3 },
-  { id: 4, name: 'סיבוב D — 55 עובדים', day: 1, time: '12:00-13:30', type: 'scc', color: '#a855f7', colorLight: '#f3e8ff', count: 55 },
-  { id: 5, name: 'פוסט-D גל 1', day: 2, time: '08:00-09:00', type: 'wave', color: '#fb923c', colorLight: '#fff7ed', count: 9 },
-  { id: 6, name: 'פוסט-D גל 2', day: 2, time: '09:00-10:00', type: 'wave', color: '#fdba74', colorLight: '#fff7ed', count: 4 },
-  { id: 7, name: 'סיבוב C — 11 עובדים', day: 2, time: '10:00-11:00', type: 'scc', color: '#8b5cf6', colorLight: '#ede9fe', count: 11 },
-  { id: 8, name: 'פוסט-C', day: 2, time: '11:00-13:00', type: 'wave', color: '#2dd4bf', colorLight: '#ccfbf1', count: 6 },
-  { id: 9, name: 'סיבוב B — 7 עובדים', day: 2, time: '13:00-14:00', type: 'scc', color: '#6366f1', colorLight: '#e0e7ff', count: 7 },
-  { id: 10, name: 'פוסט-B', day: 2, time: '14:00-15:00', type: 'wave', color: '#fb7185', colorLight: '#ffe4e6', count: 2 },
-  { id: 11, name: 'סיבוב A — 3 עובדים', day: 2, time: '15:00-15:30', type: 'scc', color: '#ef4444', colorLight: '#fee2e2', count: 3 },
+  { id: 2, name: 'גל 2 — חופשי', day: 1, time: '09:30-10:30', type: 'wave', color: '#38bdf8', colorLight: '#e0f2fe', count: 4 },
+  { id: 3, name: 'גל 3 — חופשי', day: 1, time: '10:30-11:30', type: 'wave', color: '#fbbf24', colorLight: '#fef9c3', count: 3 },
+  { id: 4, name: 'גל 4 — סיבוב', day: 1, time: '12:00-13:30', type: 'scc', color: '#a855f7', colorLight: '#f3e8ff', count: 55 },
+  { id: 5, name: 'גל 5 — חופשי', day: 2, time: '08:00-09:00', type: 'wave', color: '#fb923c', colorLight: '#fff7ed', count: 9 },
+  { id: 6, name: 'גל 6 — חופשי', day: 2, time: '09:00-10:00', type: 'wave', color: '#fdba74', colorLight: '#fff7ed', count: 4 },
+  { id: 7, name: 'גל 7 — סיבוב', day: 2, time: '10:00-11:00', type: 'scc', color: '#8b5cf6', colorLight: '#ede9fe', count: 12 },
+  { id: 8, name: 'גל 8 — חופשי', day: 2, time: '11:00-13:00', type: 'wave', color: '#2dd4bf', colorLight: '#ccfbf1', count: 6 },
+  { id: 9, name: 'גל 9 — סיבוב', day: 2, time: '13:00-14:00', type: 'scc', color: '#6366f1', colorLight: '#e0e7ff', count: 6 },
+  { id: 10, name: 'גל 10 — חופשי', day: 2, time: '14:00-15:00', type: 'wave', color: '#fb7185', colorLight: '#ffe4e6', count: 2 },
+  { id: 11, name: 'גל 11 — סיבוב', day: 2, time: '15:00-15:30', type: 'scc', color: '#ef4444', colorLight: '#fee2e2', count: 3 },
 ];
 
 export const BUILDINGS = {
@@ -45,12 +45,11 @@ export const DEPARTMENTS = [
 ];
 
 export const EMPLOYEES = [
-  // Phase 1: Wave 1 (12 emp)
+  // Phase 1: Wave 1 (13 emp)
   { id: 8, first: 'אפי', last: 'דלומי', dept: 'מכירות', oldRoom: '17A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '16A', newBld: 'ישראל קנדה', newFloor: 8, phase: 1, replaces: 'חדר ריק' },
   { id: 116, first: 'נעמה', last: 'גוטליב', dept: 'מכירות', oldRoom: 'חדש', oldBld: 'עובד חדש', oldFloor: null, newRoom: '16A', newBld: 'ישראל קנדה', newFloor: 8, phase: 1, replaces: 'חדר ריק' },
   { id: 117, first: 'חן', last: 'פרורודין', dept: 'מכירות', oldRoom: 'חדש', oldBld: 'עובד חדש', oldFloor: null, newRoom: '16A', newBld: 'ישראל קנדה', newFloor: 8, phase: 1, replaces: 'חדר ריק' },
   { id: 31, first: 'אוריאן', last: 'לזרסקו', dept: 'משפטי', oldRoom: '26D', oldBld: 'אקרו', oldFloor: 8, newRoom: '9B', newBld: 'ישראל קנדה', newFloor: 6, phase: 1, replaces: 'חדר ריק' },
-  { id: 35, first: 'נתן', last: 'חדד', dept: 'משפטי', oldRoom: '10E', oldBld: 'אקרו', oldFloor: 7, newRoom: '13B', newBld: 'ישראל קנדה', newFloor: 6, phase: 4, replaces: 'טל חוגי (כספים)' },
   { id: 50, first: 'אדוה', last: 'יוסף', dept: 'כספים', oldRoom: '5B', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '5D', newBld: 'אקרו', newFloor: 8, phase: 1, replaces: 'חדר ריק' },
   { id: 66, first: 'צבי', last: 'רוב', dept: 'כספים', oldRoom: '1E', oldBld: 'אקרו', oldFloor: 7, newRoom: '17D', newBld: 'אקרו', newFloor: 8, phase: 1, replaces: 'חדר ריק' },
   { id: 67, first: 'יעל', last: 'דהן', dept: 'מניבים', oldRoom: '07A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '18D', newBld: 'אקרו', newFloor: 8, phase: 1, replaces: 'חדר ריק' },
@@ -60,18 +59,19 @@ export const EMPLOYEES = [
   { id: 89, first: 'ירין', last: 'בכר', dept: 'כספים', oldRoom: '13E', oldBld: 'אקרו', oldFloor: 7, newRoom: '35D', newBld: 'אקרו', newFloor: 8, phase: 1, replaces: 'חדר ריק' },
   { id: 90, first: 'דניאל', last: 'יצחקי', dept: 'כספים', oldRoom: '14E', oldBld: 'אקרו', oldFloor: 7, newRoom: '36D', newBld: 'אקרו', newFloor: 8, phase: 1, replaces: 'חדר ריק' },
   { id: 91, first: 'נעמה', last: 'טל', dept: 'כספים', oldRoom: '2E', oldBld: 'אקרו', oldFloor: 7, newRoom: '36D', newBld: 'אקרו', newFloor: 8, phase: 1, replaces: 'חדר ריק' },
-  // Phase 2: Wave 2 (6 emp)
+  // Phase 2: Wave 2 (4 emp)
   { id: 24, first: 'גיל', last: 'לוי', dept: 'התחדשות עירונית', oldRoom: '20D', oldBld: 'אקרו', oldFloor: 8, newRoom: '5B', newBld: 'ישראל קנדה', newFloor: 6, phase: 2, replaces: 'אדוה יוסף (כספים)' },
   { id: 25, first: 'רועי', last: 'פינקר', dept: 'התחדשות עירונית', oldRoom: '20D', oldBld: 'אקרו', oldFloor: 8, newRoom: '5B', newBld: 'ישראל קנדה', newFloor: 6, phase: 2, replaces: 'אדוה יוסף (כספים)' },
   { id: 92, first: 'שראל', last: 'וינקלר', dept: 'הנדסה', oldRoom: '11D', oldBld: 'אקרו', oldFloor: 8, newRoom: '1E', newBld: 'אקרו', newFloor: 7, phase: 2, replaces: 'צבי רוב (כספים)' },
-  { id: 93, first: 'אביעד', last: 'פרחי', dept: 'הנדסה', oldRoom: '2C', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '2E', newBld: 'אקרו', newFloor: 7, phase: 4, replaces: 'נעמה טל (כספים)' },
-  { id: 94, first: 'יעל', last: 'כספי', dept: 'הנדסה', oldRoom: '7D', oldBld: 'אקרו', oldFloor: 8, newRoom: '2E', newBld: 'אקרו', newFloor: 7, phase: 4, replaces: 'נעמה טל (כספים)' },
   { id: 108, first: 'אלינה', last: 'כצמן', dept: 'הנדסה', oldRoom: '13D', oldBld: 'אקרו', oldFloor: 8, newRoom: '13E', newBld: 'אקרו', newFloor: 7, phase: 2, replaces: 'ירין בכר (כספים)' },
   // Phase 3: Waves 3-4 (3 emp)
   { id: 58, first: 'שיר', last: 'ארמנדו', dept: 'כספים', oldRoom: '10B', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '11D', newBld: 'אקרו', newFloor: 8, phase: 3, replaces: 'שראל וינקלר (הנדסה)' },
   { id: 59, first: 'נוי', last: 'מולגה', dept: 'כספים', oldRoom: '9E', oldBld: 'אקרו', oldFloor: 7, newRoom: '11D', newBld: 'אקרו', newFloor: 8, phase: 3, replaces: 'שראל וינקלר (הנדסה)' },
   { id: 32, first: 'אגם', last: 'אטיה', dept: 'התחדשות עירונית', oldRoom: 'מזכירות', oldBld: 'אקרו', oldFloor: null, newRoom: '10B', newBld: 'ישראל קנדה', newFloor: 6, phase: 3, replaces: 'שיר ארמנדו (כספים)' },
-  // Phase 4: SCC-D (50 emp)
+  // Phase 4: SCC-D (55 emp, includes 3 moved from wave sections)
+  { id: 35, first: 'נתן', last: 'חדד', dept: 'משפטי', oldRoom: '10E', oldBld: 'אקרו', oldFloor: 7, newRoom: '13B', newBld: 'ישראל קנדה', newFloor: 6, phase: 4, replaces: 'טל חוגי (כספים)' },
+  { id: 93, first: 'אביעד', last: 'פרחי', dept: 'הנדסה', oldRoom: '2C', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '2E', newBld: 'אקרו', newFloor: 7, phase: 4, replaces: 'נעמה טל (כספים)' },
+  { id: 94, first: 'יעל', last: 'כספי', dept: 'הנדסה', oldRoom: '7D', oldBld: 'אקרו', oldFloor: 8, newRoom: '2E', newBld: 'אקרו', newFloor: 7, phase: 4, replaces: 'נעמה טל (כספים)' },
   { id: 2, first: 'ליאור', last: 'אביב', dept: 'כללי', oldRoom: '26A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '08A', newBld: 'ישראל קנדה', newFloor: 8, phase: 4, replaces: 'יצחק סער (שיווק)' },
   { id: 3, first: 'גיל', last: 'זלצר', dept: 'כללי', oldRoom: '26A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '08A', newBld: 'ישראל קנדה', newFloor: 8, phase: 4, replaces: 'יצחק סער (שיווק)' },
   { id: 6, first: 'שי', last: 'קורן', dept: 'משפטי', oldRoom: '23D', oldBld: 'אקרו', oldFloor: 8, newRoom: '14A', newBld: 'ישראל קנדה', newFloor: 8, phase: 4, replaces: 'חן קליין (סיטי הול)' },
@@ -88,7 +88,7 @@ export const EMPLOYEES = [
   { id: 29, first: 'לירן', last: 'דואק', dept: 'התחדשות עירונית', oldRoom: '20D', oldBld: 'אקרו', oldFloor: 8, newRoom: '7B', newBld: 'ישראל קנדה', newFloor: 6, phase: 4, replaces: 'מיכל חיון, רפאל ממרן (כספים)' },
   { id: 30, first: 'ורד', last: 'לזר', dept: 'משפטי', oldRoom: '2D', oldBld: 'אקרו', oldFloor: 8, newRoom: '8B', newBld: 'ישראל קנדה', newFloor: 6, phase: 4, replaces: 'רחל בן חמו, אינה שניידר (כספים)' },
   { id: 33, first: 'דקלה', last: 'פרסיקו', dept: 'התחדשות עירונית', oldRoom: '19D', oldBld: 'אקרו', oldFloor: 8, newRoom: '11B', newBld: 'ישראל קנדה', newFloor: 6, phase: 4, replaces: 'ניר בר (כספים)' },
-  { id: 34, first: 'אלי', last: 'גדעון', dept: 'משפטי', oldRoom: '5C', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '12B', newBld: 'ישראל קנדה', newFloor: 6, phase: 4, replaces: 'טל אביבי, טל חוגי (כספים)' },
+  { id: 34, first: 'אלי', last: 'גדעון', dept: 'משפטי', oldRoom: '5C', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '12B', newBld: 'ישראל קנדה', newFloor: 6, phase: 4, replaces: 'טל אביבי (כספים)' },
   { id: 36, first: 'רעות', last: 'הדר', dept: 'משפטי', oldRoom: '23A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '14B', newBld: 'ישראל קנדה', newFloor: 6, phase: 4, replaces: 'גיא קנדה (כספים)' },
   { id: 38, first: 'ערן', last: 'שני', dept: 'סיטי הול', oldRoom: '22A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '2C', newBld: 'ישראל קנדה', newFloor: 6, phase: 4, replaces: 'גלית שמיעה, אביעד פרחי (הנדסה)' },
   { id: 41, first: 'חן', last: 'קליין', dept: 'סיטי הול', oldRoom: '14A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '5C', newBld: 'ישראל קנדה', newFloor: 6, phase: 4, replaces: 'אלי גדעון (משפטי)' },
@@ -139,7 +139,7 @@ export const EMPLOYEES = [
   { id: 22, first: 'נועם', last: 'ורבנר', dept: 'התחדשות עירונית', oldRoom: 'חדש', oldBld: 'עובד חדש', oldFloor: null, newRoom: '4B', newBld: 'ישראל קנדה', newFloor: 6, phase: 6, replaces: 'ליטל זעפרן, ניקול גלעדי (כספים)' },
   { id: 23, first: 'יותם', last: 'שפרינג', dept: 'התחדשות עירונית', oldRoom: '29D', oldBld: 'אקרו', oldFloor: 8, newRoom: '4B', newBld: 'ישראל קנדה', newFloor: 6, phase: 6, replaces: 'ליטל זעפרן, ניקול גלעדי (כספים)' },
   { id: 40, first: 'אדוה', last: 'בן יהודה', dept: 'חווית לקוח', oldRoom: 'חדש', oldBld: 'עובד חדש', oldFloor: null, newRoom: '4C', newBld: 'ישראל קנדה', newFloor: 6, phase: 6, replaces: 'קרן פינסטרבוש (כספים)' },
-  // Phase 7: SCC-C (11 emp)
+  // Phase 7: SCC-C (12 emp)
   { id: 1, first: 'אורי', last: 'עינב', dept: 'מכירות', oldRoom: '24D', oldBld: 'אקרו', oldFloor: 8, newRoom: '07A', newBld: 'ישראל קנדה', newFloor: 8, phase: 7, replaces: 'עומר לוי, יעל דהן (מניבים)' },
   { id: 21, first: 'סתיו', last: 'מזרחי', dept: 'התחדשות עירונית', oldRoom: '29D', oldBld: 'אקרו', oldFloor: 8, newRoom: '3B', newBld: 'ישראל קנדה', newFloor: 6, phase: 7, replaces: 'יובל דהן (כספים)' },
   { id: 39, first: 'דלית', last: 'שעיה', dept: 'כללי', oldRoom: '4D', oldBld: 'אקרו', oldFloor: 8, newRoom: '3C', newBld: 'ישראל קנדה', newFloor: 6, phase: 7, replaces: 'גילי שורק (הנדסה)' },
@@ -148,24 +148,24 @@ export const EMPLOYEES = [
   { id: 56, first: 'נאור', last: 'צברי', dept: 'כספים', oldRoom: '4E', oldBld: 'אקרו', oldFloor: 7, newRoom: '9D', newBld: 'אקרו', newFloor: 8, phase: 7, replaces: 'מורן משה (הנדסה)' },
   { id: 78, first: 'קובי', last: 'רפי', dept: 'כספים', oldRoom: '7E', oldBld: 'אקרו', oldFloor: 7, newRoom: '24D', newBld: 'אקרו', newFloor: 8, phase: 7, replaces: 'אורי עינב (מכירות)' },
   { id: 82, first: 'עומר', last: 'לוי', dept: 'מניבים', oldRoom: '07A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '29D', newBld: 'אקרו', newFloor: 8, phase: 7, replaces: 'סתיו מזרחי, ווסילי, יותם שפרינג' },
-  { id: 96, first: 'יאיר', last: 'מזעקי', dept: 'הנדסה', oldRoom: '8D', oldBld: 'אקרו', oldFloor: 8, newRoom: '3E', newBld: 'אקרו', newFloor: 7, phase: 7, replaces: 'צחי אהרוני (הנדסה)' },
+  { id: 96, first: 'יאיר', last: 'מזעקי', dept: 'הנדסה', oldRoom: '8D', oldBld: 'אקרו', oldFloor: 8, newRoom: '3E', newBld: 'אקרו', newFloor: 7, phase: 7, replaces: 'נטלי דהן (כספים)' },
   { id: 102, first: 'גילי', last: 'שורק', dept: 'הנדסה', oldRoom: '3C', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '7E', newBld: 'אקרו', newFloor: 7, phase: 7, replaces: 'קובי רפי (כספים)' },
   { id: 107, first: 'מורן', last: 'משה', dept: 'הנדסה', oldRoom: '9D', oldBld: 'אקרו', oldFloor: 8, newRoom: '11E', newBld: 'אקרו', newFloor: 7, phase: 7, replaces: 'לימור סיני (כספים)' },
+  { id: 84, first: 'נטלי', last: 'דהן', dept: 'כספים', oldRoom: '3E', oldBld: 'אקרו', oldFloor: 7, newRoom: '31D', newBld: 'אקרו', newFloor: 8, phase: 7, replaces: 'ליאן וינשטיין, ערן קאופמן' },
   // Phase 8: Post-C (5 emp)
   { id: 54, first: 'נעמה', last: 'אטלן', dept: 'כספים', oldRoom: '9E', oldBld: 'אקרו', oldFloor: 7, newRoom: '8D', newBld: 'אקרו', newFloor: 8, phase: 8, replaces: 'יאיר מזעקי, רותם בן יהודה (הנדסה)' },
   { id: 101, first: 'עידן', last: 'נחום', dept: 'הנדסה', oldRoom: '16D', oldBld: 'אקרו', oldFloor: 8, newRoom: '7E', newBld: 'אקרו', newFloor: 7, phase: 8, replaces: 'קובי רפי (כספים)' },
   { id: 65, first: 'גיא', last: 'מרגולין', dept: 'הנדסה', oldRoom: '05A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '16D', newBld: 'אקרו', newFloor: 8, phase: 8, replaces: 'אוהד יצחקי, עידן נחום' },
-  { id: 105, first: 'צחי', last: 'אהרוני', dept: 'הנדסה', oldRoom: '1C', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '9E', newBld: 'אקרו', newFloor: 7, phase: 8, replaces: 'ליאת כהן גוטמן, נוי מולה, נעמה אטלן' },
+  { id: 105, first: 'צחי', last: 'אהרוני', dept: 'הנדסה', oldRoom: '1C', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '9E', newBld: 'אקרו', newFloor: 7, phase: 8, replaces: 'ליאת כהן גוטמן, נוי מולגה, נעמה אטלן' },
   { id: 37, first: 'מני', last: 'כהן', dept: 'שיווק', oldRoom: 'חדש', oldBld: 'עובד חדש', oldFloor: null, newRoom: '1C', newBld: 'ישראל קנדה', newFloor: 6, phase: 8, replaces: 'צחי אהרוני (הנדסה)' },
   { id: 113, first: 'עומר', last: 'גולד', dept: 'מכירות', oldRoom: '25D', oldBld: 'אקרו', oldFloor: 8, newRoom: '05A', newBld: 'ישראל קנדה', newFloor: 8, phase: 8, replaces: 'גיא מרגולין (הנדסה)' },
-  // Phase 9: SCC-B (7 emp)
+  // Phase 9: SCC-B (6 emp)
   { id: 4, first: 'עופר', last: 'ריחני', dept: 'מכירות', oldRoom: '19A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '12A', newBld: 'ישראל קנדה', newFloor: 8, phase: 9, replaces: 'נועה בן פורת (כללי)' },
   { id: 12, first: 'ערן', last: 'קאופמן', dept: 'מכירות', oldRoom: '31D', oldBld: 'אקרו', oldFloor: 8, newRoom: '19A', newBld: 'ישראל קנדה', newFloor: 8, phase: 9, replaces: 'עופר ריחני (מכירות)' },
   { id: 18, first: 'משה', last: 'פדלון', dept: 'כללי', oldRoom: '10C', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '1B', newBld: 'ישראל קנדה', newFloor: 6, phase: 9, replaces: 'ישראל קרן (כספים)' },
   { id: 45, first: 'נועה', last: 'בן פורת', dept: 'כללי', oldRoom: '12A', oldBld: 'ישראל קנדה', oldFloor: 8, newRoom: '10C', newBld: 'ישראל קנדה', newFloor: 6, phase: 9, replaces: 'משה פדלון (כללי)' },
   { id: 83, first: 'ישראל', last: 'קרן', dept: 'כספים', oldRoom: '1B', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '30D', newBld: 'אקרו', newFloor: 8, phase: 9, replaces: 'קובי עקיבא (מניבים)' },
-  { id: 84, first: 'נטלי', last: 'דהן', dept: 'כספים', oldRoom: '3E', oldBld: 'אקרו', oldFloor: 7, newRoom: '31D', newBld: 'אקרו', newFloor: 8, phase: 9, replaces: 'ליאן וינשטיין, ערן קאופמן' },
-  { id: 95, first: 'קובי', last: 'עקיבא', dept: 'מניבים', oldRoom: '30D', oldBld: 'אקרו', oldFloor: 8, newRoom: '4E', newBld: 'אקרו', newFloor: 7, phase: 9, replaces: 'יאיר מזעקי (הנדסה)' },
+  { id: 95, first: 'קובי', last: 'עקיבא', dept: 'מניבים', oldRoom: '30D', oldBld: 'אקרו', oldFloor: 8, newRoom: '4E', newBld: 'אקרו', newFloor: 7, phase: 9, replaces: 'נאור צברי (כספים)' },
   // Phase 10: Post-B (2 emp)
   { id: 19, first: 'עינב', last: 'גפן', dept: 'מכירות', oldRoom: '2B', oldBld: 'ישראל קנדה', oldFloor: 6, newRoom: '1B', newBld: 'ישראל קנדה', newFloor: 6, phase: 10, replaces: 'ישראל קרן (כספים)' },
   { id: 20, first: 'חיים', last: 'פיין', dept: 'התחדשות עירונית', oldRoom: '22D', oldBld: 'אקרו', oldFloor: 8, newRoom: '2B', newBld: 'ישראל קנדה', newFloor: 6, phase: 10, replaces: 'עינב גפן (מכירות)' },
