@@ -195,10 +195,16 @@ function EmpCard({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStat
         <div className="text-xs text-gray-400">{emp.dept}</div>
         {onSetNote && <NoteInline empId={emp.id} note={note} onSetNote={onSetNote} editing={noteEditing} setEditing={setNoteEditing} />}
       </div>
-      <div className="flex items-center gap-1.5 shrink-0 text-xs font-mono">
-        <span className="text-amber-600">{emp.oldRoom}</span>
-        <span className="text-gray-300">←</span>
-        <span className="text-sky-600">{emp.newRoom}</span>
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="text-right">
+          <div className="text-xs font-mono text-amber-600">{emp.oldRoom}</div>
+          {emp.oldFloor && <div className="text-[9px] text-gray-400 leading-tight">{emp.oldBld} · {emp.oldFloor}</div>}
+        </div>
+        <span className="text-gray-300 text-xs">←</span>
+        <div className="text-right">
+          <div className="text-xs font-mono text-sky-600">{emp.newRoom}</div>
+          {emp.newFloor && <div className="text-[9px] text-gray-400 leading-tight">{emp.newBld} · {emp.newFloor}</div>}
+        </div>
       </div>
       {onViewOnMap && (
         <button onClick={onViewOnMap}
@@ -362,10 +368,16 @@ function EmpRow({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStatu
         </div>
         {onSetNote && <NoteInline empId={emp.id} note={note} onSetNote={onSetNote} editing={noteEditing} setEditing={setNoteEditing} />}
       </div>
-      <div className="flex items-center gap-1.5 shrink-0 text-xs font-mono">
-        <span className="text-amber-600">{emp.oldRoom}</span>
-        <span className="text-gray-300">←</span>
-        <span className="text-sky-600">{emp.newRoom}</span>
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="text-right">
+          <div className="text-xs font-mono text-amber-600">{emp.oldRoom}</div>
+          {emp.oldFloor && <div className="text-[9px] text-gray-400 leading-tight">{emp.oldBld} · {emp.oldFloor}</div>}
+        </div>
+        <span className="text-gray-300 text-xs">←</span>
+        <div className="text-right">
+          <div className="text-xs font-mono text-sky-600">{emp.newRoom}</div>
+          {emp.newFloor && <div className="text-[9px] text-gray-400 leading-tight">{emp.newBld} · {emp.newFloor}</div>}
+        </div>
       </div>
       {onViewOnMap && (
         <button onClick={onViewOnMap}
