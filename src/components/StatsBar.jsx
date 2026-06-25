@@ -1,7 +1,5 @@
 import React, { useMemo } from 'react';
 
-const TOTAL_EMPLOYEES = 112;
-
 export default function StatsBar({ employees, movedSet, phases }) {
   const stats = useMemo(() => {
     const totalMoved = movedSet.size;
@@ -54,7 +52,7 @@ export default function StatsBar({ employees, movedSet, phases }) {
       <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-3">
         <div className="flex items-baseline gap-2">
           <span className="text-2xl font-semibold tabular-nums text-gray-900">
-            {stats.totalMoved} / {TOTAL_EMPLOYEES}
+            {stats.totalMoved} / {employees.length}
           </span>
           <span className="text-sm text-gray-400">הועברו</span>
         </div>
@@ -72,8 +70,8 @@ export default function StatsBar({ employees, movedSet, phases }) {
       {/* Segmented progress bar — thin */}
       <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden flex">
         {stats.phaseProgress.map(phase => {
-          const segmentWidth = TOTAL_EMPLOYEES > 0
-            ? (phase.moved / TOTAL_EMPLOYEES) * 100
+          const segmentWidth = employees.length > 0
+            ? (phase.moved / employees.length) * 100
             : 0;
           if (segmentWidth === 0) return null;
           return (
