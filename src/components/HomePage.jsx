@@ -1,5 +1,65 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { PHASES, EMPLOYEES } from '../data/moveData.js';
+
+function Confetti({ active }) {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    if (!active) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width = window.innerWidth;
+    const H = canvas.height = window.innerHeight;
+    const colors = ['#22c55e','#3b82f6','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6','#f97316'];
+    const pieces = Array.from({ length: 400 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * -H * 1.5,
+      w: 5 + Math.random() * 8,
+      h: 3 + Math.random() * 10,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vy: 1.5 + Math.random() * 3,
+      vx: (Math.random() - 0.5) * 4,
+      rot: Math.random() * Math.PI * 2,
+      rv: (Math.random() - 0.5) * 0.2,
+      opacity: 1,
+      wave: Math.random() * Math.PI * 2,
+    }));
+    let frame;
+    let elapsed = 0;
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      elapsed++;
+      if (elapsed < 300 && elapsed % 40 === 0) {
+        for (let i = 0; i < 60; i++) pieces.push({
+          x: Math.random() * W, y: -10 - Math.random() * 100,
+          w: 5 + Math.random() * 8, h: 3 + Math.random() * 10,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vy: 1.5 + Math.random() * 3, vx: (Math.random() - 0.5) * 4,
+          rot: Math.random() * Math.PI * 2, rv: (Math.random() - 0.5) * 0.2,
+          opacity: 1, wave: Math.random() * Math.PI * 2,
+        });
+      }
+      for (const p of pieces) {
+        p.x += p.vx + Math.sin(p.wave + elapsed * 0.02) * 0.8;
+        p.y += p.vy;
+        p.rot += p.rv;
+        if (elapsed > 400) p.opacity = Math.max(0, p.opacity - 0.004);
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.globalAlpha = p.opacity;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+      if (elapsed < 700 && pieces.some(p => p.opacity > 0)) frame = requestAnimationFrame(draw);
+    };
+    frame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(frame);
+  }, [active]);
+  if (!active) return null;
+  return <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9999 }} />;
+}
 
 // Normalize room IDs so '1B' === '01B' for comparison
 function normRoom(r) {
@@ -25,9 +85,15 @@ function computeSCCCascade(phaseId) {
   const phaseEmps = EMPLOYEES.filter(e => e.phase === phaseId);
   if (!phaseEmps.length) return [];
 
+  // Use moveStep field if available (pre-computed optimal order)
+  if (phaseEmps[0].moveStep) {
+    return [...phaseEmps]
+      .sort((a, b) => a.moveStep - b.moveStep)
+      .map(e => e.id);
+  }
+
   const phaseIds = new Set(phaseEmps.map(e => e.id));
 
-  // Build: normalizedRoom -> [employees whose newRoom is that room] (within SCC only)
   const destToEmps = {};
   phaseEmps.forEach(emp => {
     const r = normRoom(emp.newRoom);
@@ -35,27 +101,12 @@ function computeSCCCascade(phaseId) {
     destToEmps[r].push(emp);
   });
 
-  // Build: normalizedRoom -> [employees whose oldRoom is that room] (within SCC only)
-  const srcToEmps = {};
-  phaseEmps.forEach(emp => {
-    const r = normRoom(emp.oldRoom);
-    if (!r || emp.oldRoom === 'חדש' || emp.oldRoom === 'מזכירות') return;
-    if (!srcToEmps[r]) srcToEmps[r] = [];
-    srcToEmps[r].push(emp);
-  });
-
-  // Find starting employee: one whose OLD room is NOT the destination of any SCC member
-  // (means nobody in the SCC is waiting to enter their room → they can start freely)
-  // If it's a pure cycle (everyone's old room IS someone's destination), pick employee
-  // who unblocks the most others when they leave — or simply the first in list.
   let startEmp = phaseEmps.find(emp => {
     const r = normRoom(emp.oldRoom);
     return !destToEmps[r] || destToEmps[r].length === 0;
   });
 
   if (!startEmp) {
-    // Pure cycle — pick the employee whose oldRoom has the most people wanting to enter
-    // (unblocks most moves when they leave first)
     let maxWaiting = -1;
     phaseEmps.forEach(emp => {
       const r = normRoom(emp.oldRoom);
@@ -64,7 +115,6 @@ function computeSCCCascade(phaseId) {
     });
   }
 
-  // Trace the snake chain
   const cascade = [];
   const visited = new Set();
 
@@ -72,18 +122,12 @@ function computeSCCCascade(phaseId) {
     if (!emp || visited.has(emp.id)) return;
     cascade.push(emp.id);
     visited.add(emp.id);
-
-    // When this employee leaves their oldRoom, who can now enter it?
     const freedRoom = normRoom(emp.oldRoom);
     const unblocked = (destToEmps[freedRoom] || []).filter(e => !visited.has(e.id) && phaseIds.has(e.id));
-
-    // Each unblocked employee can now move — trace their chain too
     unblocked.forEach(next => traceFrom(next));
   }
 
   traceFrom(startEmp);
-
-  // Add any remaining employees not yet visited (isolated sub-chains)
   phaseEmps.forEach(emp => {
     if (!visited.has(emp.id)) traceFrom(emp);
   });
@@ -193,6 +237,31 @@ function EmpCard({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStat
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-gray-900 truncate">{emp.first} {emp.last}</div>
         <div className="text-xs text-gray-400">{emp.dept}</div>
+        {emp.id === 104 && <div className="text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 mt-1">⚠ לפנות את החפצים מחוץ לחדר עד סוף שלב 4</div>}
+        {emp.id === 44 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ להכניס שולחן 120X60 מחדר 2C לחדר 9C</div>}
+        {emp.id === 2 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ יצחק סער יצא מחדרו בהמשך הסבב - להשאיר ציוד בחדר 8A עד סוף הסבב</div>}
+        {emp.id === 103 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ הילה וייטנברג תצא מחדרה בהמשך הסבב - להשאיר ציוד בחדר 8E עד סוף הסבב</div>}
+        {(emp.id === 114 || emp.id === 16 || emp.id === 17) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ 2 שולחנות 160X60</div>}
+        {emp.id === 30 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ נכנסת לשולחן רחל עד שאינה יוצאת</div>}
+        {(emp.id === 105 || emp.id === 82 || emp.id === 57 || emp.id === 36) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ הזמנת שולחן סמנכ״ל</div>}
+        {emp.id === 106 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ הורדת ציוד מחדר קיים</div>}
+        {(emp.id === 7 || emp.id === 6) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ הזמנת שולחנות 160X60</div>}
+        {emp.id === 26 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ להוציא שולחן סבטלנה</div>}
+        {(emp.id === 24 || emp.id === 25) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחן של אינה 160X60</div>}
+        {emp.id === 102 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחן ממשרד 09E (צחי חדש)</div>}
+        {emp.id === 104 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחן ממשרד 09E (צחי חדש)</div>}
+        {(emp.id === 46 || emp.id === 47) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחן ממשרד 03D (לימור סיני)</div>}
+        {emp.id === 58 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחן ממשרד 16D (גיא מרגולין)</div>}
+        {emp.id === 67 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ חדר ישיבות מתפצל - להביא שולחן מ10E (אמיר מלאך חדש)</div>}
+        {emp.id === 66 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ חדר ישיבות מתפצל - להביא שולחן מ10E (אמיר מלאך חדש)</div>}
+        {emp.id === 68 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ להעביר שולחן מחדר 14D</div>}
+        {(emp.id === 70 || emp.id === 73 || emp.id === 72 || emp.id === 71) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ פיצול מוקד - שולחנות מחדרים קיימים 140X70</div>}
+        {emp.id === 84 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ להוציא שולחן מיותר</div>}
+        {(emp.id === 88 || emp.id === 89) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ להעביר שולחנות 140X60 מחדר 20D (מוקד ישן)</div>}
+        {(emp.id === 90 || emp.id === 91) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחנות מחדר 29D (עומר לוי חדש)</div>}
+        {emp.id === 49 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ מצטרפת לדלית עד סוף הסבב</div>}
+        {(emp.id === 96 || emp.id === 95) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ בסיום העברה - לבצע הצרחה בין חדרים</div>}
+        {emp.id === 79 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ ישב יחד עם עומר גולד עד סיום העברה</div>}
         {onSetNote && <NoteInline empId={emp.id} note={note} onSetNote={onSetNote} editing={noteEditing} setEditing={setNoteEditing} />}
       </div>
       <div className="flex items-center gap-2 shrink-0">
@@ -304,8 +373,18 @@ function computeSCCWaves(phaseId, movedSet) {
   const phaseEmps = EMPLOYEES.filter(e => e.phase === phaseId);
   if (!phaseEmps.length) return [];
 
-  // Build: who blocks whom — emp A is blocked by emp B if B.oldRoom === A.newRoom
-  const blockedBy = {}; // empId -> Set<empId>
+  // Use moveStep field if available (pre-computed optimal waves)
+  if (phaseEmps[0].moveStep) {
+    const stepNums = [...new Set(phaseEmps.map(e => e.moveStep))].sort((a, b) => a - b);
+    const waves = [];
+    for (const s of stepNums) {
+      const wave = phaseEmps.filter(e => e.moveStep === s && !movedSet.has(e.id)).map(e => e.id);
+      if (wave.length > 0) waves.push(wave);
+    }
+    return waves;
+  }
+
+  const blockedBy = {};
   phaseEmps.forEach(emp => {
     blockedBy[emp.id] = new Set();
     const normNew = normRoom(emp.newRoom);
@@ -324,14 +403,12 @@ function computeSCCWaves(phaseId, movedSet) {
   let iterations = 0;
   while (remaining.size > 0 && iterations < 100) {
     iterations++;
-    // Find all employees whose blockers are all scheduled
     const wave = [...remaining].filter(id => {
       const blockers = blockedBy[id] || new Set();
       return [...blockers].every(bId => scheduled.has(bId));
     });
 
     if (wave.length === 0) {
-      // Pure cycle — break by picking the one with fewest remaining blockers
       const pick = [...remaining].sort((a, b) => {
         const aB = [...(blockedBy[a] || [])].filter(x => !scheduled.has(x)).length;
         const bB = [...(blockedBy[b] || [])].filter(x => !scheduled.has(x)).length;
@@ -366,6 +443,31 @@ function EmpRow({ emp, isMoved, onClick, status, onAdvanceStatus, onRegressStatu
             <span className="text-gray-300"> · מחליף: {emp.replaces}</span>
           )}
         </div>
+        {emp.id === 104 && <div className="text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 mt-1">⚠ לפנות את החפצים מחוץ לחדר עד סוף שלב 4</div>}
+        {emp.id === 44 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ להכניס שולחן 120X60 מחדר 2C לחדר 9C</div>}
+        {emp.id === 2 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ יצחק סער יצא מחדרו בהמשך הסבב - להשאיר ציוד בחדר 8A עד סוף הסבב</div>}
+        {emp.id === 103 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ הילה וייטנברג תצא מחדרה בהמשך הסבב - להשאיר ציוד בחדר 8E עד סוף הסבב</div>}
+        {(emp.id === 114 || emp.id === 16 || emp.id === 17) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ 2 שולחנות 160X60</div>}
+        {emp.id === 30 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ נכנסת לשולחן רחל עד שאינה יוצאת</div>}
+        {(emp.id === 105 || emp.id === 82 || emp.id === 57 || emp.id === 36) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ הזמנת שולחן סמנכ״ל</div>}
+        {emp.id === 106 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ הורדת ציוד מחדר קיים</div>}
+        {(emp.id === 7 || emp.id === 6) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ הזמנת שולחנות 160X60</div>}
+        {emp.id === 26 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ להוציא שולחן סבטלנה</div>}
+        {(emp.id === 24 || emp.id === 25) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחן של אינה 160X60</div>}
+        {emp.id === 102 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחן ממשרד 09E (צחי חדש)</div>}
+        {emp.id === 104 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחן ממשרד 09E (צחי חדש)</div>}
+        {(emp.id === 46 || emp.id === 47) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחן ממשרד 03D (לימור סיני)</div>}
+        {emp.id === 58 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחן ממשרד 16D (גיא מרגולין)</div>}
+        {emp.id === 67 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ חדר ישיבות מתפצל - להביא שולחן מ10E (אמיר מלאך חדש)</div>}
+        {emp.id === 66 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ חדר ישיבות מתפצל - להביא שולחן מ10E (אמיר מלאך חדש)</div>}
+        {emp.id === 68 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ להעביר שולחן מחדר 14D</div>}
+        {(emp.id === 70 || emp.id === 73 || emp.id === 72 || emp.id === 71) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ פיצול מוקד - שולחנות מחדרים קיימים 140X70</div>}
+        {emp.id === 84 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ להוציא שולחן מיותר</div>}
+        {(emp.id === 88 || emp.id === 89) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ להעביר שולחנות 140X60 מחדר 20D (מוקד ישן)</div>}
+        {(emp.id === 90 || emp.id === 91) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ לקחת שולחנות מחדר 29D (עומר לוי חדש)</div>}
+        {emp.id === 49 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ מצטרפת לדלית עד סוף הסבב</div>}
+        {(emp.id === 96 || emp.id === 95) && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ בסיום העברה - לבצע הצרחה בין חדרים</div>}
+        {emp.id === 79 && <div className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">⚠ ישב יחד עם עומר גולד עד סיום העברה</div>}
         {onSetNote && <NoteInline empId={emp.id} note={note} onSetNote={onSetNote} editing={noteEditing} setEditing={setNoteEditing} />}
       </div>
       <div className="flex items-center gap-2 shrink-0">
@@ -663,10 +765,13 @@ export default function HomePage({ movedSet, toggleMoved, markPhaseComplete, emp
       </div>
 
       {/* All done */}
+      <Confetti active={isAllDone} />
       {isAllDone && (
-        <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-6 text-center">
-          <div className="text-base font-semibold text-green-800 mb-1">המעבר הושלם</div>
+        <div className="bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-300 rounded-xl px-5 py-8 text-center shadow-lg animate-pulse-once">
+          <div className="text-4xl mb-3">🎉</div>
+          <div className="text-xl font-bold text-green-800 mb-2">המעבר הושלם!</div>
           <div className="text-sm text-green-600">כל {totalEmps} העובדים הועברו בהצלחה</div>
+          <div className="text-3xl mt-3">🏠 ✨ 🎊</div>
         </div>
       )}
 
