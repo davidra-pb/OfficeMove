@@ -217,12 +217,15 @@ export default function App() {
     return unsub;
   }, [isAdmin]);
   const resetAll = useCallback(async () => {
-    if (!window.confirm('האם לאפס את כל הנתונים? פעולה זו תמחק את כל הסימונים ויומן הפעולות.')) return;
+    const confirmed = window.prompt(
+      'פעולה זו תמחק את כל הסימונים, סטטוסים והערות ויומן הפעולות.\n\nלאישור הקלד: אפס'
+    );
+    if (confirmed?.trim() !== 'אפס') return;
     setResetting(true);
     try {
-      await setDoc(doc(db, 'officeMove', 'progress'), { movedIds: [] });
+      await setDoc(doc(db, 'officeMove', 'progress'), { movedIds: [], employeeStatuses: {}, employeeNotes: {} });
       await clearAuditLog();
-      await logAction(currentUserRef.current?.username, 'איפוס מערכת — Start Moving');
+      await logAction(currentUserRef.current?.username, 'איפוס מערכת');
       setSideMenuOpen(false);
       setActiveTab('home');
     } finally {
@@ -522,7 +525,7 @@ export default function App() {
       </main>
 
       <footer className="text-center py-4 text-[11px] text-gray-300 select-none">
-        V3.2
+        V3.3
       </footer>
 
       {/* Admin Side Menu */}
@@ -624,10 +627,10 @@ export default function App() {
             {/* Drawer footer */}
             <div className="border-t border-gray-100 p-4 shrink-0 space-y-2">
               <button onClick={resetAll} disabled={resetting}
-                className="w-full px-3 py-2.5 rounded-lg text-sm font-semibold bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-50 transition-colors text-center">
-                {resetting ? 'מאפס...' : '🚀 Start Moving'}
+                className="w-full px-3 py-2.5 rounded-lg text-sm font-semibold bg-red-700 text-white hover:bg-red-800 disabled:opacity-50 transition-colors text-center">
+                {resetting ? 'מאפס...' : 'איפוס כל הנתונים'}
               </button>
-              <p className="text-[10px] text-gray-400 text-center">מחיקת כל הסימונים ויומן הפעולות</p>
+              <p className="text-[10px] text-gray-400 text-center">מחיקת כל הסימונים, סטטוסים ויומן הפעולות</p>
               <button onClick={() => { setSideMenuOpen(false); handleLogout(); }}
                 className="w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors text-center">
                 התנתק
